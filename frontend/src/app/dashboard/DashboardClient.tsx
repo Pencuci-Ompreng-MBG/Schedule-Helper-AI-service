@@ -116,50 +116,6 @@ useEffect(() => {
     console.log("Schedulet Items : ", scheduleItems);
   }, [scheduleItems]);
 
-  const handleConfirmPriorities = async () => {
-    if (hitlPayload?.type !== "task_review") return;
-
-    const token = getAppToken();
-    if (!token) {
-      console.error("No token found for task review request");
-      return;
-    }
-
-    try {
-      await Promise.all(
-        hitlPayload.tasks.map((task) =>
-          fetch(`${API_URL}/calendar`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              title: task.title,
-              description: task.title,
-              category: task.category ?? "general",
-              priority: task.priority,
-              deadline: task.deadline ?? undefined,
-            } satisfies CreateCalendarPayload),
-          }).then((res) => {
-            if (!res.ok) throw new Error(`Failed to save task: ${task.title}`);
-            return res.json();
-          }),
-        ),
-      );
-
-      handleSend(null, {
-        tasks: hitlPayload.tasks.map((task) => ({
-          task: task.title,
-          priority: task.priority,
-          deadline: task.deadline ?? "",
-        })),
-      });
-    } catch (error) {
-      console.error("Error saving tasks to calendar:", error);
-    }
-  };
-
   if (isAnalyzing) {
     return <AnalyzingState />;
   }
@@ -204,7 +160,6 @@ useEffect(() => {
       prioritizerTasks={
         hitlPayload?.type === "task_review" ? hitlPayload.tasks : undefined
       }
-      onApprove={handleConfirmPriorities}
     />
   );
 }

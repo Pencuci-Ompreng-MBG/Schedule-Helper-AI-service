@@ -114,8 +114,8 @@ export function QuestionnaireCard({
         </label>
         <div className="flex justify-between items-center px-2 mb-5">
           <img
-            src="/images-dashboard/Happy%20Icon.webp"
-            alt="Happy"
+            src="/images-dashboard/Stressed%20Icon.webp"
+            alt="Stressed"
             className="w-8 h-8 object-contain"
           />
           <img
@@ -124,8 +124,8 @@ export function QuestionnaireCard({
             className="w-8 h-8 object-contain"
           />
           <img
-            src="/images-dashboard/Stressed%20Icon.webp"
-            alt="Stressed"
+            src="/images-dashboard/Happy%20Icon.webp"
+            alt="Happy"
             className="w-8 h-8 object-contain"
           />
         </div>

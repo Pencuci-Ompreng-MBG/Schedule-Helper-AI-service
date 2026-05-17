@@ -87,30 +87,78 @@ Kamu adalah Agent 3: Action Translator, Prioritizer, dan Scheduler Draft Builder
 
 Konteks:
 - Input berasal dari Agent 1/router dalam bentuk raw_tasks.
-- PENTING: Field 'description' pada raw_tasks memuat 2 hal krusial dari obrolan user: (1) perasaan/tingkat urgensi user, dan (2) detail yang belum jelas. PERHATIKAN INI BAIK-BAIK.
 - Tugasmu bukan sekadar membuat ringkasan, tetapi mengubah input user menjadi daftar pekerjaan yang bisa dieksekusi.
 - Bahasa output harus mengikuti bahasa user. Jika user memakai bahasa Indonesia santai, gunakan Indonesia santai tetapi tetap jelas.
 
 Tugas utama:
-1. Baca setiap raw_task. Jadikan catatan perasaan user (stress/overload) di field 'description' sebagai pertimbangan utama untuk menentukan skor 'energy_fit' dan 'effort'.
+1. Baca setiap raw_task.
 2. Buat task breakdown:
    - title
-   - subtasks konkret (jika 'description' menyebutkan ada detail ambigu, jadikan subtask awal "Klarifikasi detail: ...")
-   - estimated_minutes (Beri waktu ekstra jika user terdeteksi sedang stress/lelah di 'description')
+   - subtasks konkret
+   - estimated_minutes
    - deadline jika bisa disimpulkan
    - category
    - preferred_window
    - urgency, importance, effort, energy_fit
-3. Jangan membuat task fiktif yang tidak didukung input KECUALI untuk aturan Wellness di bawah.
-4. Jika user bilang deadline "hari ini", "besok", atau "minggu ini", gunakan itu sebagai sinyal urgency tinggi.
-5. WELLNESS RULE (CRITICAL): Jika "Kondisi Mental/Intent User" adalah "stress" atau "overload", KAMU WAJIB menambahkan 1 task EKSTRA secara otomatis (di luar input user). Beri nama "Istirahat & Relaksasi". Set durasi 30 menit, kategori "santai", preferred_window "bebas". Berikan skor urgency=5, importance=5, effort=1, energy_fit=5 agar task ini muncul di urutan paling atas/awal jadwal. Isi subtask dengan: "Tarik napas panjang", "Minum air putih secukupnya", "Stretching atau rebahan sebentar untuk kalibrasi pikiran".
+3. Jika detail belum jelas, tetap buat task yang masuk akal dan tulis subtask awal seperti "klarifikasi detail tugas".
+4. Jangan membuat task fiktif yang tidak didukung input KECUALI untuk aturan Wellness di bawah.
+5. ATURAN DEADLINE: Jika user bilang "besok", set deadline = hari ini + 1 hari. Jika bilang "lusa" atau "besoknya", set deadline = hari ini + 2 hari. Gunakan itu sebagai sinyal urgency tinggi.
+6. WELLNESS RULE (CRITICAL): Jika "Kondisi Mental/Intent User" adalah "stress" atau "overload", KAMU WAJIB menambahkan 1 task EKSTRA secara otomatis (di luar input user). Beri nama "Istirahat & Relaksasi". Set durasi 30 menit, kategori "santai", preferred_window "bebas". Berikan skor urgency=5, importance=5, effort=1, energy_fit=5 agar task ini muncul di urutan paling atas/awal jadwal. Isi subtask dengan: "Tarik napas panjang", "Minum air putih secukupnya", "Stretching atau rebahan sebentar untuk kalibrasi pikiran".
 
 Panduan scoring:
-- urgency: 5 = deadline hari ini/besok/sangat mepet, 1 = santai/tidak ada urgensi
-- importance: 5 = berdampak besar, 1 = aktivitas ringan
-- effort: 5 = sangat berat/kompleks, 1 = sangat ringan
-- energy_fit: 5 = cocok dikerjakan segera, 1 = tidak cocok dikerjakan sekarang (misal: user sedang burnout/stress di description)
+- urgency:
+  5 = deadline hari ini/besok/sangat mepet
+  4 = minggu ini atau perlu segera
+  3 = ada deadline tapi tidak sangat mepet
+  2 = tidak terlalu mendesak
+  1 = santai/tidak ada urgensi
+
+- importance:
+  5 = berdampak besar ke akademik/kerja/proyek utama
+  4 = tugas penting yang harus selesai
+  3 = tugas biasa
+  2 = aktivitas pendukung
+  1 = aktivitas ringan
+
+- effort:
+  5 = sangat berat/kompleks
+  4 = butuh fokus tinggi
+  3 = sedang
+  2 = ringan
+  1 = sangat ringan
+
+- energy_fit:
+  5 = cocok dikerjakan segera sebagai fokus utama
+  4 = cocok dikerjakan setelah quick planning
+  3 = netral
+  2 = lebih cocok nanti
+  1 = tidak cocok dikerjakan sekarang
+
+Kategori wajib salah satu:
+- serius
+- santai
+- biasa
+- lainnya
+
+Preferred window wajib salah satu:
+- pagi
+- siang
+- sore
+- malam
+- bebas
 """
+
+
+def _safe_parse_datetime(value: Any) -> datetime:
+    """
+    Helper untuk mem-parsing ISO string menjadi offset-naive datetime.
+    Ini mencegah error 'can't compare offset-naive and offset-aware datetimes'
+    saat dibandingkan dengan datetime.now()
+    """
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None)
+    dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    return dt.replace(tzinfo=None)
 
 
 def build_review_reasoning_message(
@@ -154,26 +202,28 @@ def build_review_reasoning_message(
             deadline=deadline,
             preferred_window=preferred_window,
             index=idx,
+            priority=priority,
+            title=task_title,
         )
 
         reason_lines.append(
-            f"{idx}. {task_title} dijadwalkan pada {start_time} "
-            f"karena {reason}. Durasi {duration} menit dan priority {priority}."
+            f"{idx}. **{task_title}** ({start_time} | {duration} menit): {reason}"
         )
 
     return (
-        "Cek dulu daftar tugas dan draft jadwal ini.\n\n"
-        "Alasan penjadwalan:\n"
+        "Cek dulu draft jadwal yang udah aku susun ini ya.\n\n"
+        "Ini alasan kenapa aku nyusun urutannya kayak gini:\n"
         + "\n".join(reason_lines)
-        + "\n\nKamu bisa approve, edit, tambah, atau hapus sebelum dijadwalkan."
+        + "\n\nKalau dirasa kurang pas, kamu bisa edit langsung parameternya di sebelah kiri. Kalau udah oke, tinggal klik Approve!"
     )
 
 
 def _format_schedule_time(value: str | None) -> str:
     if not value:
         return "waktu yang tersedia"
+
     try:
-        dt = datetime.fromisoformat(str(value))
+        dt = _safe_parse_datetime(value)
         return dt.strftime("%Y-%m-%d %H:%M")
     except ValueError:
         return str(value)
@@ -184,15 +234,46 @@ def _build_single_schedule_reason(
     deadline: str | None,
     preferred_window: str,
     index: int,
+    priority: Any,
+    title: str,
 ) -> str:
-    return "mengikuti urutan prioritas dan slot waktu kosong di kalender"
+    title_lower = str(title).lower()
+    priority_val = int(priority) if str(priority).isdigit() else 3
+
+    if "istirahat" in title_lower or "relaksasi" in title_lower:
+        return "ini waktu khusus buat kamu ambil napas dan recharge energi dulu biar nggak makin pusing."
+
+    has_strict_time = False
+    if deadline and "T" in str(deadline) and ":" in str(deadline):
+        try:
+            dt = _safe_parse_datetime(deadline)
+            if not (dt.hour == 23 and dt.minute >= 55):
+                has_strict_time = True
+        except ValueError:
+            pass
+
+    if has_strict_time:
+        return "jadwalnya aku pas-in karena ini nempel banget sama target deadline atau acara utamanya."
+
+    if index == 1 and priority_val == 1:
+        return "tugas ini sifatnya paling mendesak, jadi aku taruh paling awal biar beban pikiranmu langsung berkurang."
+
+    if preferred_window and preferred_window != "bebas":
+        return f"aku usahakan masuk di waktu {preferred_window} sesuai dengan preferensi yang kamu mau."
+
+    if priority_val == 1:
+        return "aku selipin sedini mungkin setelah urusan sebelumnya beres karena ini juga prioritas tinggi."
+
+    if priority_val == 2:
+        return "prioritasnya lumayan penting, jadi aku masukin di sela-sela jadwal kosongmu."
+
+    return "aku taruh di slot luang berikutnya supaya alur kerjamu tetap enak dan nggak nabrak."
 
 
 def apply_hitl_edits(
     hitl_result: dict,
     task_breakdown: list[TaskBreakdown],
     proposed_schedule: list[ScheduleItem],
-    existing_schedules: list[dict] = None,
 ) -> tuple[list[TaskBreakdown], list[ScheduleItem]]:
     edited_tasks = hitl_result.get("tasks")
     edited_schedule = hitl_result.get("proposed_schedule")
@@ -200,7 +281,7 @@ def apply_hitl_edits(
     final_tasks = edited_tasks or task_breakdown
 
     if edited_tasks and not edited_schedule:
-        final_schedule = build_proposed_schedule(final_tasks, existing_schedules)
+        final_schedule = build_proposed_schedule(final_tasks)
     else:
         final_schedule = edited_schedule or proposed_schedule
 
@@ -214,21 +295,14 @@ def make_prioritizer(llm: BaseChatModel, calendar_client=None):
         previous_status = state.get("hitl_status")
         existing_tasks = state.get("task_breakdown") or []
         existing_schedule = state.get("proposed_schedule") or []
-
-        # Ambil intent user secara umum
         current_intent = state.get("current_intent", "manage_task")
-
-        # Ambil Jadwal Mentah untuk algoritma jadwal
-        raw_schedules = _fetch_raw_schedules(calendar_client, state)
-        schedule_context = (
-            _format_schedule_context(raw_schedules) if raw_schedules else ""
-        )
 
         if previous_status == "rejected" and existing_tasks:
             task_breakdown = existing_tasks
             proposed_schedule = existing_schedule or build_proposed_schedule(
-                task_breakdown, raw_schedules
+                task_breakdown
             )
+
         else:
             raw_tasks = get_raw_tasks(state)
 
@@ -239,6 +313,8 @@ def make_prioritizer(llm: BaseChatModel, calendar_client=None):
                     "proposed_schedule": [],
                     "error_message": "raw_tasks kosong.",
                 }
+
+            schedule_context = _fetch_schedule_context(calendar_client, state)
 
             try:
                 task_breakdown = build_task_breakdown_with_llm(
@@ -254,8 +330,7 @@ def make_prioritizer(llm: BaseChatModel, calendar_client=None):
                 )
                 task_breakdown = build_task_breakdown_rule_based(raw_tasks)
 
-            # Passing raw_schedules ke algoritma scheduling
-            proposed_schedule = build_proposed_schedule(task_breakdown, raw_schedules)
+            proposed_schedule = build_proposed_schedule(task_breakdown)
 
         hitl_result = (
             interrupt(
@@ -272,12 +347,10 @@ def make_prioritizer(llm: BaseChatModel, calendar_client=None):
             or {}
         )
 
-        # PENYESUAIAN: Menerima "approved_data" atau "approved" untuk validasi cURL nested
         approved_val = hitl_result.get("approved")
         if approved_val is None:
             approved_val = hitl_result.get("approved_data")
 
-        # Kalau formatnya dictionary {"approved_data": true} dari nested cURL
         if isinstance(approved_val, dict):
             approved = bool(
                 approved_val.get("approved", approved_val.get("approved_data"))
@@ -289,13 +362,12 @@ def make_prioritizer(llm: BaseChatModel, calendar_client=None):
             hitl_result=hitl_result,
             task_breakdown=task_breakdown,
             proposed_schedule=proposed_schedule,
-            existing_schedules=raw_schedules,
         )
 
         if not approved:
             return {
                 **ai_msg(
-                    "Baik, jadwal belum disetujui. Silakan edit dulu daftar tugasnya."
+                    "Baik, draftnya aku sesuaikan ya. Silakan cek lagi perubahannya."
                 ),
                 "task_breakdown": final_tasks,
                 "proposed_schedule": final_schedule,
@@ -306,7 +378,7 @@ def make_prioritizer(llm: BaseChatModel, calendar_client=None):
 
         return {
             **ai_msg(
-                f"Siap, {len(final_tasks)} tugas sudah disetujui dan akan lanjut ke penjadwalan."
+                f"Siap, {len(final_tasks)} tugas sudah disetujui dan akan aku jadwalkan sekarang."
             ),
             "task_breakdown": final_tasks,
             "proposed_schedule": final_schedule,
@@ -324,19 +396,17 @@ def build_task_breakdown_with_llm(
     schedule_context: str = "",
     intent: str = "manage_task",
 ) -> list[TaskBreakdown]:
-
     normalized_raw_tasks = [
         _raw_task_to_dict(task, idx) for idx, task in enumerate(raw_tasks, start=1)
     ]
 
     today = datetime.now().strftime("%Y-%m-%d")
 
-    # Prompt dipangkas dan difokuskan ke raw_tasks beserta description-nya
     prompt_content = (
         f"Tanggal hari ini: {today}\n\n"
         f"Kondisi Mental/Intent User secara keseluruhan: {intent}\n\n"
         + (
-            f"Konteks jadwal existing kalender:\n{schedule_context}\n\n"
+            f"Konteks jadwal existing (jangan diubah):\n{schedule_context}\n\n"
             if schedule_context
             else ""
         )
@@ -347,7 +417,10 @@ def build_task_breakdown_with_llm(
     result = structured_llm.invoke(
         [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt_content},
+            {
+                "role": "user",
+                "content": prompt_content,
+            },
         ]
     )
 
@@ -409,6 +482,7 @@ def calculate_priority(
     urgency: int, importance: int, effort: int, energy_fit: int
 ) -> int:
     score = 0.45 * urgency + 0.30 * importance + 0.15 * (6 - effort) + 0.10 * energy_fit
+
     if score >= 4.0:
         return 1
     if score >= 2.7:
@@ -447,6 +521,7 @@ def normalize_text(text: str) -> str:
 
 def detect_preferred_window(task: str) -> PreferredWindow:
     text = task.lower()
+
     if "pagi" in text:
         return "pagi"
     if "siang" in text:
@@ -455,11 +530,13 @@ def detect_preferred_window(task: str) -> PreferredWindow:
         return "sore"
     if "malam" in text:
         return "malam"
+
     return "bebas"
 
 
 def detect_category(task: str) -> CategoryType:
     text = task.lower()
+
     if any(
         k in text
         for k in [
@@ -475,71 +552,60 @@ def detect_category(task: str) -> CategoryType:
         ]
     ):
         return "serius"
+
     if any(k in text for k in ["istirahat", "break", "main game", "main", "rebahan"]):
         return "santai"
+
     if any(k in text for k in ["meeting", "organisasi", "rapat"]):
         return "lainnya"
+
     return "biasa"
 
 
 def estimate_duration(task: str) -> int:
     text = task.lower()
-    if any(
-        k in text
-        for k in [
-            "laporan",
-            "proposal",
-            "skripsi",
-            "makalah",
-            "project",
-            "proyek",
-            "capstone",
-            "ui",
-            "dashboard",
-        ]
-    ):
+
+    if any(k in text for k in ["laporan", "proposal", "skripsi", "makalah"]):
+        return 120
+    if any(k in text for k in ["project", "proyek", "capstone"]):
         return 120
     if any(k in text for k in ["demo", "presentasi"]):
         return 90
+    if any(k in text for k in ["ui", "dashboard", "fitur", "integrasi"]):
+        return 120
+    if any(k in text for k in ["bug", "error", "fix", "hotfix"]):
+        return 60
+    if any(k in text for k in ["meeting", "rapat"]):
+        return 60
+    if any(k in text for k in ["dokumentasi", "langgraph", "belajar", "ngulik"]):
+        return 60
+
     return 60
 
 
 def estimate_priority(task: str) -> int:
     text = task.lower()
     score = 0
+
     if any(
         k in text
-        for k in [
-            "deadline",
-            "besok",
-            "hari ini",
-            "urgent",
-            "segera",
-            "mepet",
-            "demo",
-            "presentasi",
-            "ujian",
-        ]
+        for k in ["deadline", "besok", "hari ini", "urgent", "segera", "mepet"]
     ):
         score += 4
-    elif "minggu ini" in text or any(
-        k in text
-        for k in [
-            "bug",
-            "error",
-            "fix",
-            "hotfix",
-            "laporan",
-            "proposal",
-            "revisi",
-            "project",
-        ]
-    ):
+    if "minggu ini" in text:
         score += 3
-    elif any(k in text for k in ["meeting", "rapat"]):
+    if any(k in text for k in ["demo", "presentasi", "ujian"]):
+        score += 4
+    if any(k in text for k in ["bug", "error", "fix", "hotfix"]):
+        score += 3
+    if any(k in text for k in ["laporan", "proposal", "revisi", "project", "proyek"]):
+        score += 3
+    if any(k in text for k in ["meeting", "rapat"]):
         score += 2
-    else:
+    if any(k in text for k in ["ngulik", "belajar", "dokumentasi", "langgraph"]):
         score += 1
+    if "minor" in text:
+        score -= 1
 
     if score >= 6:
         return 1
@@ -551,32 +617,40 @@ def estimate_priority(task: str) -> int:
 def extract_deadline(task: str) -> str | None:
     text = task.lower()
     now = datetime.now()
+
     if "hari ini" in text:
         return now.replace(hour=23, minute=59, second=0, microsecond=0).isoformat()
+
+    if "lusa" in text or "besoknya" in text:
+        due = now + timedelta(days=2)
+        return due.replace(hour=23, minute=59, second=0, microsecond=0).isoformat()
+
     if "besok" in text:
-        return (
-            (now + timedelta(days=1))
-            .replace(hour=23, minute=59, second=0, microsecond=0)
-            .isoformat()
-        )
+        due = now + timedelta(days=1)
+        return due.replace(hour=23, minute=59, second=0, microsecond=0).isoformat()
+
     if "minggu ini" in text:
-        return (
-            (now + timedelta(days=7))
-            .replace(hour=23, minute=59, second=0, microsecond=0)
-            .isoformat()
-        )
+        due = now + timedelta(days=7)
+        return due.replace(hour=23, minute=59, second=0, microsecond=0).isoformat()
+
     return None
 
 
 def build_task_breakdown_rule_based(raw_tasks: list[RawTask]) -> list[TaskBreakdown]:
     breakdown: list[TaskBreakdown] = []
+
     for idx, raw in enumerate(raw_tasks, start=1):
         data = _raw_task_to_dict(raw, idx)
         cleaned = normalize_text(source_text(raw, idx))
+        task_id = data.get("task_id") or f"task_{idx:03d}"
         title = data.get("title") or cleaned or f"Tugas {idx}"
+
+        if not cleaned:
+            cleaned = title
+
         breakdown.append(
             {
-                "task_id": data.get("task_id") or f"task_{idx:03d}",
+                "task_id": task_id,
                 "title": title,
                 "subtasks": build_basic_subtasks(cleaned),
                 "estimated_minutes": estimate_duration(cleaned),
@@ -586,6 +660,7 @@ def build_task_breakdown_rule_based(raw_tasks: list[RawTask]) -> list[TaskBreakd
                 "preferred_window": detect_preferred_window(cleaned),
             }
         )
+
     breakdown.sort(
         key=lambda x: (
             x["priority"],
@@ -594,46 +669,70 @@ def build_task_breakdown_rule_based(raw_tasks: list[RawTask]) -> list[TaskBreakd
             x["task_id"],
         )
     )
+
     return breakdown
 
 
-def _fetch_raw_schedules(calendar_client, state: AppState) -> list[dict]:
+def _fetch_schedule_context(calendar_client, state: AppState) -> str:
     if calendar_client is None:
-        return []
+        return ""
+
     metadata = get_metadata(state) or {}
     token = _extract_auth_token(metadata)
+
     try:
         schedules = calendar_client.list_schedules(token=token)
-        return schedules if schedules else []
     except Exception as err:
         print(f"[Agent 3] Calendar context error: {err}")
-        return []
+        return ""
 
-
-def _fetch_schedule_context(calendar_client, state: AppState) -> str:
-    schedules = _fetch_raw_schedules(calendar_client, state)
     if not schedules:
         return "(tidak ada jadwal)"
+
     return _format_schedule_context(schedules)
 
 
 def _format_schedule_context(schedules: list[dict]) -> str:
-    lines = []
+    lines: list[str] = []
     for item in schedules[:5]:
         title = str(item.get("title") or "(tanpa judul)")
         start_time = item.get("startTime") or item.get("start_time")
-        deadline = item.get("endTime") or item.get("deadline")
+        deadline = item.get("deadline") or item.get("endTime")
         status = item.get("status") or "pending"
-        time_part = f" ({start_time} - {deadline})" if start_time else ""
+        time_bits = []
+        if start_time:
+            time_bits.append(f"mulai: {start_time}")
+        if deadline:
+            time_bits.append(f"selesai: {deadline}")
+        time_part = f" ({', '.join(time_bits)})" if time_bits else ""
         lines.append(f"- {title} [{status}]{time_part}")
+
     return "\n".join(lines)
 
 
 def build_basic_subtasks(task_text: str) -> list[str]:
+    text = task_text.strip()
+    lower_text = text.lower()
+
+    if any(
+        k in lower_text
+        for k in ["meeting", "rapat", "ketemu", "janji", "kelas", "kuliah"]
+    ):
+        return [text]
+
+    if any(
+        k in lower_text for k in ["belum jelas", "ga jelas", "tidak jelas", "bingung"]
+    ):
+        return [
+            "Klarifikasi detail tugas yang belum jelas",
+            "Tentukan bagian yang paling mendesak",
+            "Kerjakan bagian pertama yang paling mudah dimulai",
+        ]
+
     return [
-        f"Mulai kerjakan: {task_text.strip()}",
-        "Lanjutkan bagian utama",
-        "Cek hasil dan rapikan",
+        f"Mulai kerjakan: {text}",
+        "Lanjutkan bagian utama yang paling penting",
+        "Cek hasil dan rapikan sebelum selesai",
     ]
 
 
@@ -655,76 +754,44 @@ def minutes_to_iso(total_minutes: int, base_date: str) -> str:
     return f"{base_date}T{hour:02d}:{minute:02d}:00"
 
 
-def build_proposed_schedule(
-    task_breakdown: list[TaskBreakdown], existing_schedules: list[dict] = None
-) -> list[ScheduleItem]:
+def build_proposed_schedule(task_breakdown: list[TaskBreakdown]) -> list[ScheduleItem]:
     proposed_schedule: list[ScheduleItem] = []
 
     current_date = datetime.now().strftime("%Y-%m-%d")
     current_time = 9 * 60
 
     for item in task_breakdown:
-        is_locked = item.get("is_locked_time", False)
-        locked_time_str = item.get("locked_start_time")
+        preferred_window = item.get("preferred_window", "bebas")
+        preferred_start = WINDOW_START.get(preferred_window, 9 * 60)
 
-        base_date = current_date
-        start_time_minutes = current_time
+        deadline = item.get("deadline")
+        deadline_dt = None
 
-        if is_locked and locked_time_str:
+        if deadline:
             try:
-                # 1. Jika user mengunci jam spesifik dari UI
-                locked_dt = datetime.fromisoformat(
-                    str(locked_time_str).replace("Z", "+00:00")
-                )
-                base_date = locked_dt.strftime("%Y-%m-%d")
-                start_time_minutes = locked_dt.hour * 60 + locked_dt.minute
-
-                # Sesuaikan current_time agar tugas berikutnya menyesuaikan jadwal ini
-                current_date = base_date
-                current_time = start_time_minutes
+                deadline_dt = _safe_parse_datetime(deadline)
             except ValueError:
-                is_locked = False  # Fallback kalau format salah
+                deadline_dt = None
 
-        if not is_locked:
-            # 2. Logic otomatis dari sistem jika jam tidak dikunci
-            preferred_window = item.get("preferred_window", "bebas")
-            preferred_start = WINDOW_START.get(preferred_window, 9 * 60)
+        if deadline_dt:
+            base_date = deadline_dt.strftime("%Y-%m-%d")
+            deadline_minutes = deadline_dt.hour * 60 + deadline_dt.minute
 
-            deadline = item.get("deadline")
-            deadline_dt = None
+            if base_date != current_date:
+                current_date = base_date
+                current_time = preferred_start
 
-            if deadline:
-                try:
-                    deadline_dt = datetime.fromisoformat(deadline)
-                except ValueError:
-                    deadline_dt = None
+            is_end_of_day_deadline = deadline_dt.hour == 23 and deadline_dt.minute >= 55
 
-            if deadline_dt:
-                base_date = deadline_dt.strftime("%Y-%m-%d")
-                deadline_minutes = deadline_dt.hour * 60 + deadline_dt.minute
-
-                # Jika tanggal berubah, reset jam kerja ke awal window.
-                if base_date != current_date:
-                    current_date = base_date
-                    current_time = preferred_start
-
-                # Deadline jam 23:59 berarti hanya batas akhir hari,
-                # bukan berarti task harus dimulai jam 23:59.
-                is_end_of_day_deadline = (
-                    deadline_dt.hour == 23 and deadline_dt.minute >= 55
-                )
-
-                if is_end_of_day_deadline:
-                    start_time_minutes = max(current_time, preferred_start)
-                else:
-                    # Untuk event fixed-time seperti meeting jam 09:00,
-                    # gunakan jam deadline sebagai start time.
-                    start_time_minutes = max(
-                        current_time, deadline_minutes, preferred_start
-                    )
-            else:
-                base_date = current_date
+            if is_end_of_day_deadline:
                 start_time_minutes = max(current_time, preferred_start)
+            else:
+                start_time_minutes = max(
+                    current_time, deadline_minutes, preferred_start
+                )
+        else:
+            base_date = current_date
+            start_time_minutes = max(current_time, preferred_start)
 
         main_task = item["title"]
 

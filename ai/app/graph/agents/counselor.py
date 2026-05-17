@@ -80,7 +80,12 @@ DISCOVERY_SYSTEM = """Ekstrak setiap task yang disebutkan user menjadi item terp
 Aturan:
 - Satu task = satu item
 - Gunakan bahasa persis user untuk title
-- Jangan gabungkan task berbeda"""
+- Jangan gabungkan task berbeda
+- WAJIB tentukan "category" dengan panduan berikut:
+  * "serius" : Berhubungan dengan tugas, PR, ujian, kuliah, project, laporan, atau pekerjaan.
+  * "santai" : Berhubungan dengan istirahat, hiburan, main, rebahan, liburan, atau relaksasi.
+  * "lainnya": Berhubungan dengan meeting, rapat, organisasi, atau kepanitiaan.
+  * "biasa"  : Aktivitas harian lainnya yang tidak masuk kategori di atas."""
 
 DETAIL_PARSE_SYSTEM = """Kamu bertugas memperbarui detail informasi dari sebuah tugas berdasarkan jawaban terbaru user.
 

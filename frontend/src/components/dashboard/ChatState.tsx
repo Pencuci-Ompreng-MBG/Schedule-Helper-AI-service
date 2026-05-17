@@ -5,6 +5,7 @@ import {
   useEffect,
   useState,
 } from "react";
+
 import { Message, RawTasks, ScheduleItem } from "@/types";
 import { HitlPayload, PrioritizerTask, ResumeData } from "@/hooks/useChat";
 import { ChatMessage } from "./ChatMessage";
@@ -13,6 +14,7 @@ import { ChatInput } from "./ChatInput";
 import { CounselorApproveBar } from "./CounselorApproveBar";
 import { ResultState } from "./ResultState";
 import { X, ChevronRight, Folder } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface ChatStateProps {
   messages: Message[];
@@ -38,7 +40,6 @@ interface ChatStateProps {
   setIsResult: Dispatch<SetStateAction<boolean>>;
   setIsAnalyzing: Dispatch<SetStateAction<boolean>>;
   prioritizerTasks: PrioritizerTask[] | undefined;
-  onApprove: () => void;
 }
 
 export function ChatState({
@@ -50,7 +51,6 @@ export function ChatState({
   messagesEndRef,
   hitlPayload,
   scheduleItems,
-  onApprove,
 }: ChatStateProps) {
   const [isOpenRawTasks, setIsOpenRawTasks] = useState(false);
   const [rawTasks, setRawTasks] = useState<RawTasks[] | null>(null);
@@ -122,12 +122,14 @@ export function ChatState({
                     {msg.role !== "system" && <ChatMessage message={msg} />}
 
                     {msg.role === "system" &&
-                      (!isTyping && isLastIndex && 
-                       (hitlPayload?.type === "counselor_chat" ||
-                        hitlPayload?.type === "counselor_review")
-                        ? <ChatMessage message={msg} payload={hitlPayload} />
-                        : <ChatMessage message={msg} />
-                      )}
+                      (isLastIndex && isTyping ? (
+                        <TypingIndicator />
+                      ) : hitlPayload?.type === "counselor_chat" ||
+                        hitlPayload?.type === "counselor_review" ? (
+                        <ChatMessage message={msg} payload={hitlPayload} />
+                      ) : (
+                        <ChatMessage message={msg} />
+                      ))}
                   </div>
                 );
               })}
@@ -136,13 +138,16 @@ export function ChatState({
             {hitlPayload?.type === "task_review" && (
               <ResultState
                 scheduleItems={scheduleItems}
-                onApprove={onApprove}
+                onApprove={() =>
+                  handleSend(null, {
+                    approved: true
+                  })
+                }
                 // Jika di parent ada fungsi onEditSchedule atau onEditTask, Anda bisa melemparnya ke sini
                 // onEditSchedule={handleEditSchedule}
               />
             )}
 
-            {isTyping && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </div>
         </div>

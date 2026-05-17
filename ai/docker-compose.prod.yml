@@ -3,27 +3,50 @@ services:
     build: .
     ports:
       - "8000:8000"
+
     env_file: .env
+
     environment:
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
-      - ENVIRONMENT=production
+      REDIS_URL: redis://redis:6379
+
+    volumes:
+      - ./credentials.json:/app/credentials.json:ro
+      - ./token.json:/app/token.json
+
+    command:
+      [
+        "uv",
+        "run",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+        "--reload-dir",
+        "/app/app"
+      ]
+
+    cpus: 1.0
+    mem_limit: 1g
+
     depends_on:
       redis:
         condition: service_healthy
-    restart: alwa
+
+    restart: unless-stopped
 
   redis:
-    image: redis/redis-stack:7.2.0-v10 
+    image: redis/redis-stack:latest
+
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/da
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
+      interval: 5s
+      timeout: 3s
       retries: 5
-    restart: always
 
-volumes:
-  redis_data:
+    restart: unless-stopped
