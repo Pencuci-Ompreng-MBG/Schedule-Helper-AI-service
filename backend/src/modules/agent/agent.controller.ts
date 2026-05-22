@@ -31,6 +31,10 @@ import { GetUser } from '../auth/decorator/get-user.decorator.js';
 export class AgentController {
   constructor(private readonly agentService: AgentService) {}
 
+  /**
+   * Endpoint untuk mengirim pesan ke AI (LangGraph) dan menerima balasannya 
+   * secara real-time menggunakan mekanisme Server-Sent Events (SSE) / stream.
+   */
   @Post('stream')
   async stream(
     @Body() body: ChatDto,
@@ -174,16 +178,27 @@ export class AgentController {
     }
   }
 
+  /**
+   * Endpoint untuk mengambil seluruh daftar riwayat percakapan (chat sessions)
+   * milik user yang sedang login, diurutkan dari yang terbaru.
+   */
   @Get()
   findAll(@GetUser('id') userId: string) {
     return this.agentService.findAll(userId);
   }
 
+  /**
+   * Endpoint untuk mengambil detail isi riwayat pesan (chat history) 
+   * dari satu percakapan/thread yang spesifik beserta status terakhir AI-nya.
+   */
   @Get(':thread_id')
   async findThread(@Param('thread_id') threadId: string) {
     return this.agentService.findThread(threadId);
   }
 
+  /**
+   * Endpoint untuk menghapus riwayat percakapan beserta seluruh pesannya berdasarkan ID.
+   */
   @Delete(':id')
   remove(@Param('id') id: string, @GetUser('id') userId: string) {
     return this.agentService.remove(id, userId);

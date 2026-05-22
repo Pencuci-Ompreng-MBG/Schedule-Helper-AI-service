@@ -18,6 +18,9 @@ import { Response } from 'express';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /**
+   * Endpoint untuk mendaftarkan user baru menggunakan email dan password.
+   */
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiBody({ type: RegisterDto })
@@ -27,6 +30,9 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  /**
+   * Endpoint untuk login menggunakan email dan password. Mengembalikan JWT token.
+   */
   @HttpCode(HttpStatus.OK)
   @Post('login')
   @ApiOperation({ summary: 'Sign in with email and password' })
@@ -37,6 +43,10 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  /**
+   * Endpoint untuk logout. 
+   * (Di backend hanya mengembalikan pesan sukses, penghapusan token dilakukan di frontend).
+   */
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   @ApiOperation({ summary: 'Logout user' })
@@ -47,6 +57,9 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
+  /**
+   * Endpoint untuk memulai proses login via akun Google (OAuth2).
+   */
   @Get('google')
   @UseGuards(GoogleGuard)
   @ApiOperation({ summary: 'Login with Google OAuth2' })
@@ -54,6 +67,10 @@ export class AuthController {
     // This endpoint will redirect the user to the Google login page.
   }
 
+  /**
+   * Callback endpoint setelah user berhasil login di halaman Google.
+   * Akan meredirect user kembali ke frontend dengan membawa JWT token.
+   */
   @Get('google/callback')
   @UseGuards(GoogleGuard)
   @ApiOperation({ summary: 'Google OAuth2 callback URL' })

@@ -17,6 +17,9 @@ import { EditUserDto } from './dto/edit-user.dto.js';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  /**
+   * Endpoint untuk mengambil data profil user yang sedang login saat ini.
+   */
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'Returns the current user' })
@@ -25,6 +28,9 @@ export class UsersController {
     return this.usersService.getMe(userId);
   }
 
+  /**
+   * Endpoint untuk mengubah/update data profil user yang sedang login.
+   */
   @Patch()
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
