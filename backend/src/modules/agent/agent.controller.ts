@@ -12,6 +12,7 @@ import {
   Param,
   Res,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AgentService } from './agent.service';
@@ -173,8 +174,18 @@ export class AgentController {
     }
   }
 
+  @Get()
+  findAll(@GetUser('id') userId: string) {
+    return this.agentService.findAll(userId);
+  }
+
   @Get(':thread_id')
   async findThread(@Param('thread_id') threadId: string) {
     return this.agentService.findThread(threadId);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string, @GetUser('id') userId: string) {
+    return this.agentService.remove(id, userId);
   }
 }

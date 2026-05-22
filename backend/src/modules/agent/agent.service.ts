@@ -191,8 +191,17 @@ export class AgentService {
     }
   }
 
-  findAll() {
-    return `This action returns all agent`;
+  async findAll(userId: string) {
+    return this.prisma.session.findMany({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
   }
 
   async findThread(threadId: string) {
@@ -281,7 +290,17 @@ export class AgentService {
     return `This action updates a #${id} agent`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} agent`;
+  async remove(id: string, userId: string) {
+    const session = await this.prisma.session.findFirst({
+      where: { id, userId },
+    });
+
+    if (!session) {
+      throw new NotFoundException(`Session with ID ${id} not found`);
+    }
+
+    return this.prisma.session.delete({
+      where: { id },
+    });
   }
 }
