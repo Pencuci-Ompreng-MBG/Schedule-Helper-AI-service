@@ -54,6 +54,7 @@ export default function DashboardClient() {
     inputValue,
     setInputValue,
     isTyping,
+    currentAgentStep,
     isStarted,
     messagesEndRef,
     handleSend,
@@ -154,6 +155,7 @@ export default function DashboardClient() {
     <ChatState
       messages={messages}
       isTyping={isTyping}
+      currentAgentStep={currentAgentStep}
       inputValue={inputValue}
       setInputValue={setInputValue}
       handleSend={handleSend}

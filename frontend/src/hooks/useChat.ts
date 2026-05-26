@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -75,6 +75,7 @@ export function useChat(userEmail?: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStarted, setIsStarted] = useState(false);
   const [hitlPayload, setHitlPayload] = useState<HitlPayload | null>(null);
+  const [currentAgentStep, setCurrentAgentStep] = useState<string | null>(null);
 
   useEffect(() => {
     if (!hitlPayload && !messages?.length) return;
@@ -250,6 +251,9 @@ export function useChat(userEmail?: string) {
           try {
             const stepData = JSON.parse(agentMatch[1]);
             const nodeName = stepData?.update?.node;
+            if (nodeName && nodeName !== "__interrupt__") {
+              setCurrentAgentStep(nodeName);
+            }
 
             console.log("update data: ", stepData?.update);
             const tasks: RawTasks[] = stepData.update?.update?.raw_tasks || [];
@@ -347,6 +351,7 @@ export function useChat(userEmail?: string) {
   const executeChatStream = async (userContent: string, streamPayload: any) => {
     // 1. Reset UI & Preparation
     setHitlPayload(null);
+    setCurrentAgentStep(null);
     setInputValue(""); // Bersihkan input (aman dilakukan di kedua kondisi)
     setIsStarted(true);
     setIsTyping(true);
@@ -379,6 +384,7 @@ export function useChat(userEmail?: string) {
       });
     } finally {
       setIsTyping(false);
+      setCurrentAgentStep(null);
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   };
@@ -437,6 +443,7 @@ export function useChat(userEmail?: string) {
     inputValue,
     setInputValue,
     isTyping,
+    currentAgentStep,
     isStarted,
     messagesEndRef,
     hitlPayload,

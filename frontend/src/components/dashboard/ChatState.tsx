@@ -9,6 +9,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import type { HitlPayload, PrioritizerTask, ResumeData } from "@/hooks/useChat";
 import type { Message, RawTasks, ScheduleItem } from "@/types";
+import { AgentStepIndicator } from "./AgentStepIndicator";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
 import { CounselorApproveBar } from "./CounselorApproveBar";
@@ -18,6 +19,7 @@ import { TypingIndicator } from "./TypingIndicator";
 interface ChatStateProps {
   messages: Message[];
   isTyping: boolean;
+  currentAgentStep: string | null;
   inputValue: string;
   setInputValue: (val: string) => void;
   handleSend: (
@@ -44,6 +46,7 @@ interface ChatStateProps {
 export function ChatState({
   messages,
   isTyping,
+  currentAgentStep,
   inputValue,
   setInputValue,
   handleSend,
@@ -122,7 +125,10 @@ export function ChatState({
 
                     {msg.role === "system" &&
                       (isLastIndex && isTyping ? (
-                        <TypingIndicator />
+                        <div className="flex flex-col gap-3">
+                          <AgentStepIndicator currentStep={currentAgentStep} />
+                          <TypingIndicator />
+                        </div>
                       ) : hitlPayload?.type === "counselor_chat" ||
                         hitlPayload?.type === "counselor_review" ? (
                         <ChatMessage message={msg} payload={hitlPayload} />
