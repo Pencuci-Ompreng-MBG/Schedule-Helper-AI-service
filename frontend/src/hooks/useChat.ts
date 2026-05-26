@@ -61,6 +61,7 @@ export type ExecutionComplete = {
   status: "completed" | "waiting_hitl" | "done";
   next_node?: string[];
   hitl_payload?: HitlPayload;
+  api_payload?: { scheduled_count?: number };
 };
 
 export type ResumeData =
@@ -242,6 +243,10 @@ export function useChat(userEmail?: string) {
               }
             } else if (execData.status === "done") {
               setIsSchedulingDone(true);
+              // Coba gunakan api_payload dari backend jika tersedia
+              if (execData.api_payload && execData.api_payload.scheduled_count !== undefined) {
+                setScheduledEventCount(execData.api_payload.scheduled_count);
+              }
               setHitlPayload((prev) => {
                 if (prev && "proposed_schedule" in prev) {
                   setScheduledEventCount(prev.proposed_schedule.length);
@@ -360,10 +365,16 @@ export function useChat(userEmail?: string) {
 
   const executeChatStream = async (userContent: string, streamPayload: any) => {
     // 1. Reset UI & Preparation
+    // Simpan dulu jumlah event yang akan dijadwalkan dari state hitlPayload saat ini
+    if (hitlPayload && "proposed_schedule" in hitlPayload && hitlPayload.proposed_schedule) {
+      setScheduledEventCount(hitlPayload.proposed_schedule.length);
+    } else {
+      setScheduledEventCount(0);
+    }
+    
     setHitlPayload(null);
     setCurrentAgentStep(null);
     setIsSchedulingDone(false);
-    setScheduledEventCount(0);
     setInputValue(""); // Bersihkan input (aman dilakukan di kedua kondisi)
     setIsStarted(true);
     setIsTyping(true);
