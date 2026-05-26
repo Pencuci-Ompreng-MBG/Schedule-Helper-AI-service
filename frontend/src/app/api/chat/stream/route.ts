@@ -1,4 +1,5 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
+
 type IncomingMessage = {
   role?: string;
   content?: string;
@@ -37,7 +38,7 @@ function buildBackendPayload(
     typeof body.user_id === "string" && body.user_id
       ? body.user_id
       : "anonymous";
-      
+
   if (
     body.approved_data !== undefined &&
     typeof body.thread_id === "string" &&
@@ -139,16 +140,23 @@ export async function POST(req: NextRequest) {
   const payload = buildBackendPayload(body);
 
   const authHeader = req.headers.get("Authorization");
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (authHeader) {
     headers["Authorization"] = authHeader;
   }
 
-  const response = await fetch(process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/agent/stream` : "http://localhost:3000/api/agent/stream", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(payload),
-  });
+  const response = await fetch(
+    process.env.NEXT_PUBLIC_API_URL
+      ? `${process.env.NEXT_PUBLIC_API_URL}/agent/stream`
+      : "http://localhost:3000/api/agent/stream",
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    },
+  );
 
   if (!response.ok || !response.body) {
     return new Response(await response.text(), {
@@ -184,9 +192,7 @@ export async function POST(req: NextRequest) {
             const { eventName, data } = parseEventBlock(block);
 
             if (eventName === "agent_step") {
-              controller.enqueue(
-                encoder.encode(`\x00AGENT_STEP:${data}\x00`),
-              );
+              controller.enqueue(encoder.encode(`\x00AGENT_STEP:${data}\x00`));
             }
 
             if (eventName === "execution_complete") {

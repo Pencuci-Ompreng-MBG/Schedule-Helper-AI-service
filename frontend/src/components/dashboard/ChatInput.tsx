@@ -1,4 +1,4 @@
-import { ElementType, FormEvent, JSX, ReactNode } from "react";
+import { ElementType, type FormEvent, JSX, type ReactNode } from "react";
 
 interface ChatInputProps {
   value: string;
@@ -7,7 +7,7 @@ interface ChatInputProps {
   disabled: boolean;
   placeholder?: string;
   // 1. Change from ElementType to ReactNode (and make it optional if needed)
-  counselorBar?: ReactNode; 
+  counselorBar?: ReactNode;
 }
 
 export function ChatInput({
@@ -16,7 +16,7 @@ export function ChatInput({
   onSubmit,
   disabled,
   placeholder,
-  counselorBar
+  counselorBar,
 }: ChatInputProps) {
   return (
     <div className="flex-col gap-4 p-6 shrink-0 flex justify-center">

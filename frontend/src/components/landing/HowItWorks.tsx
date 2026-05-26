@@ -6,18 +6,20 @@ export function HowItWorks() {
     {
       title: "Dump Your Thoughts",
       description: "Write everything on your mind freely. No structure needed.",
-      icon: "/images-homepage/Dump%20Your%20Thoughts.webp"
+      icon: "/images-homepage/Dump%20Your%20Thoughts.webp",
     },
     {
       title: "AI Clarifies & Prioritizes",
-      description: "Our AI asks questions and understands your context to prioritize tasks.",
-      icon: "/images-homepage/AI%20Clarifies%20&%20Prioritizes.webp"
+      description:
+        "Our AI asks questions and understands your context to prioritize tasks.",
+      icon: "/images-homepage/AI%20Clarifies%20&%20Prioritizes.webp",
     },
     {
       title: "Get Your Schedule",
-      description: "Receive a personalized, actionable schedule based on your energy and time.",
-      icon: "/images-homepage/Get%20Your%20Schedule.webp"
-    }
+      description:
+        "Receive a personalized, actionable schedule based on your energy and time.",
+      icon: "/images-homepage/Get%20Your%20Schedule.webp",
+    },
   ];
 
   return (
@@ -31,8 +33,8 @@ export function HowItWorks() {
 
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
         {steps.map((step, idx) => (
-          <div 
-            key={idx} 
+          <div
+            key={idx}
             className="bg-white p-8 sm:p-10 rounded-2xl shadow-[0_4px_25px_rgb(0,0,0,0.03)] border border-gray-100 flex flex-col items-start text-left hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all"
           >
             <div className="mb-6 bg-purple-50 p-3 rounded-2xl inline-block">

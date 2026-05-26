@@ -22,8 +22,8 @@ export function Hero() {
           </h1>
           <p className="text-[16px] leading-[1.6] text-[#717182] max-w-[420px] mt-2">
             AI-powered productivity assistant that understands your chaos,
-            prioritizes your tasks, and creates schedules that actually work
-            for you.
+            prioritizes your tasks, and creates schedules that actually work for
+            you.
           </p>
           <div className="flex flex-wrap items-center gap-4 mt-6">
             <Link
@@ -57,8 +57,12 @@ export function Hero() {
                 className="w-[52px] h-[52px] object-contain shrink-0"
               />
               <div className="flex flex-col">
-                <h3 className="font-semibold text-[18px] text-[#0A0A0A]">AI-Powered Analysis</h3>
-                <p className="text-[16px] text-[#717182] mt-1">Understands context and priorities</p>
+                <h3 className="font-semibold text-[18px] text-[#0A0A0A]">
+                  AI-Powered Analysis
+                </h3>
+                <p className="text-[16px] text-[#717182] mt-1">
+                  Understands context and priorities
+                </p>
               </div>
             </div>
 
@@ -69,8 +73,12 @@ export function Hero() {
                 className="w-[52px] h-[52px] object-contain shrink-0"
               />
               <div className="flex flex-col">
-                <h3 className="font-semibold text-[18px] text-[#0A0A0A]">Smart Prioritization</h3>
-                <p className="text-[16px] text-[#717182] mt-1">Focuses on what matters most</p>
+                <h3 className="font-semibold text-[18px] text-[#0A0A0A]">
+                  Smart Prioritization
+                </h3>
+                <p className="text-[16px] text-[#717182] mt-1">
+                  Focuses on what matters most
+                </p>
               </div>
             </div>
 
@@ -81,8 +89,12 @@ export function Hero() {
                 className="w-[52px] h-[52px] object-contain shrink-0"
               />
               <div className="flex flex-col">
-                <h3 className="font-semibold text-[18px] text-[#0A0A0A]">Actionable Schedules</h3>
-                <p className="text-[16px] text-[#717182] mt-1">Realistic timelines that fit your life</p>
+                <h3 className="font-semibold text-[18px] text-[#0A0A0A]">
+                  Actionable Schedules
+                </h3>
+                <p className="text-[16px] text-[#717182] mt-1">
+                  Realistic timelines that fit your life
+                </p>
               </div>
             </div>
           </div>

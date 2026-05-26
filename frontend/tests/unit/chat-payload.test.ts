@@ -7,7 +7,7 @@ describe("buildUserContent", () => {
     const questionnaire = {
       energyLevel: 60,
       mood: 40,
-      availableTime: "2 - 4 Hours"
+      availableTime: "2 - 4 Hours",
     };
 
     const result = buildUserContent(trimmed, questionnaire);

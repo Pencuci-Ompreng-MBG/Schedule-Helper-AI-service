@@ -1,14 +1,15 @@
 "use client";
 
+import { Calendar } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useUser } from "@/hooks/useUser";
-import { chatService } from "@/services/chatService";
 import {
   IoIosArrowDropleftCircle,
   IoIosArrowDroprightCircle,
 } from "react-icons/io";
+import { useUser } from "@/hooks/useUser";
+import { chatService } from "@/services/chatService";
 import { removeChatSession } from "@/utils/removeChatMsgs";
 
 /**
@@ -47,6 +48,7 @@ export default function DashboardLayout({
   // Navigasi Active
   const isDashboardActive = pathname === "/dashboard";
   const isHistoryActive = pathname === "/dashboard/history";
+  const isCalendarActive = pathname === "/dashboard/calendar";
   const isProfileActive = pathname === "/dashboard/profile";
 
   return (
@@ -113,6 +115,19 @@ export default function DashboardLayout({
                   className={`w-5 h-5 ${isHistoryActive ? "filter brightness-0 invert" : ""}`}
                 />
                 History
+              </Link>
+              <Link
+                href="/dashboard/calendar"
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-colors cursor-pointer ${
+                  isCalendarActive
+                    ? "bg-[#8A38F5] text-white shadow-sm"
+                    : "text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                <Calendar
+                  className={`w-5 h-5 ${isCalendarActive ? "text-white" : "text-gray-500"}`}
+                />
+                Calendar
               </Link>
               <Link
                 href="/dashboard/profile"
@@ -213,6 +228,16 @@ export default function DashboardLayout({
                     isHistoryActive ? "filter brightness-0 invert" : ""
                   }`}
                 />
+              </Link>
+              <Link
+                href="/dashboard/calendar"
+                className={`flex items-center justify-center p-3 rounded-xl transition-colors ${
+                  isCalendarActive
+                    ? "bg-[#8A38F5] shadow-sm text-white"
+                    : "hover:bg-gray-50 text-gray-500"
+                }`}
+              >
+                <Calendar className="w-5 h-5" />
               </Link>
               <Link
                 href="/dashboard/profile"

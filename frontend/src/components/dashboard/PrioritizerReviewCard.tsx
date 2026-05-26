@@ -19,11 +19,12 @@ const getPriorityLabel = (priority: number) => {
 
 export function PrioritizerReviewCard({
   payload,
-  onConfirm
+  onConfirm,
 }: PrioritizerReviewCardProps) {
   const totalTasks = payload.tasks.length;
-  const highPriorityCount = payload.tasks.filter((task) => task.priority >= 4)
-    .length;
+  const highPriorityCount = payload.tasks.filter(
+    (task) => task.priority >= 4,
+  ).length;
 
   return (
     <div className="rounded-3xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
@@ -42,9 +43,7 @@ export function PrioritizerReviewCard({
       </div>
 
       {payload.message && (
-        <p className="mt-3 text-[14px] text-[#111827]">
-          {payload.message}
-        </p>
+        <p className="mt-3 text-[14px] text-[#111827]">{payload.message}</p>
       )}
 
       <div className="mt-4 space-y-3">

@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
-import { UserProfile } from "@/types";
+import { useCallback, useEffect, useState } from "react";
 import { authService } from "@/services/authService";
+import type { UserProfile } from "@/types";
 
 /**
  * Hook untuk mengelola data profil pengguna yang sedang login.

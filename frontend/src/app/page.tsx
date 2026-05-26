@@ -1,10 +1,10 @@
 "use client";
 
 import { Inter } from "next/font/google";
-import { Navbar } from "@/components/landing/Navbar";
+import { CTA } from "@/components/landing/CTA";
 import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
-import { CTA } from "@/components/landing/CTA";
+import { Navbar } from "@/components/landing/Navbar";
 
 const inter = Inter({ subsets: ["latin"] });
 

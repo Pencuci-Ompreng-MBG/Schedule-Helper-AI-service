@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Message } from "@/types";
+import { useEffect, useRef, useState } from "react";
+import type { Message } from "@/types";
 
 /**
  * HOOK: Mengelola logika percakapan khusus untuk halaman DEMO.
@@ -9,7 +9,8 @@ export function useDemoChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "system",
-      content: "Welcome to Schedule Helper! Write all your thoughts, tasks, and plans freely. I'll help you organize them.",
+      content:
+        "Welcome to Schedule Helper! Write all your thoughts, tasks, and plans freely. I'll help you organize them.",
     },
   ]);
   const [inputValue, setInputValue] = useState("");
@@ -34,11 +35,12 @@ export function useDemoChat() {
     setTimeout(() => {
       const assistantMessage: Message = {
         role: "system",
-        content: "Thanks for sharing! I can see you have several tasks. Let me ask a few questions to help prioritize. Which of these tasks has the most urgent deadline?",
+        content:
+          "Thanks for sharing! I can see you have several tasks. Let me ask a few questions to help prioritize. Which of these tasks has the most urgent deadline?",
       };
       setMessages((prev) => [...prev, assistantMessage]);
       setIsTyping(false);
-      
+
       const newCount = messageCount + 1;
       if (newCount >= 3) {
         setIsLimitReached(true);
@@ -54,6 +56,6 @@ export function useDemoChat() {
     isLimitReached,
     messageCount,
     messagesEndRef,
-    handleSend
+    handleSend,
   };
 }

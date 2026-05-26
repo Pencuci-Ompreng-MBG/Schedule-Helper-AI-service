@@ -1,8 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import DashboardClient from "./DashboardClient";
-import { useRouter } from "next/navigation";
 
 function DashboardFallback() {
   return (

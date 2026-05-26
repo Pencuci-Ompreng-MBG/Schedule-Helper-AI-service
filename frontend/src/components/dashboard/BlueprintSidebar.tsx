@@ -1,6 +1,6 @@
 import { FileText, MoreVertical, Plus, Trash2Icon } from "lucide-react";
-import type { Blueprint } from "./resultStateTypes";
 import { useState } from "react";
+import type { Blueprint } from "./resultStateTypes";
 
 interface BlueprintSidebarProps {
   blueprints: Blueprint[];

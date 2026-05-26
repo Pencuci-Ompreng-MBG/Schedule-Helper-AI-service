@@ -2,12 +2,17 @@
 
 import { Inter } from "next/font/google";
 import Link from "next/link";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MailIcon, LockIcon, ArrowLeftIcon, InfoIcon } from "@/components/auth/AuthIcons";
-import { validateEmail } from "@/utils/validation";
-import { authService } from "@/services/authService";
+import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
+import {
+  ArrowLeftIcon,
+  InfoIcon,
+  LockIcon,
+  MailIcon,
+} from "@/components/auth/AuthIcons";
+import { authService } from "@/services/authService";
+import { validateEmail } from "@/utils/validation";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -45,10 +50,10 @@ export default function LoginPage() {
     // Langsung arahkan browser ke endpoint backend
     // JANGAN gunakan fetch() / authService.oauth() untuk flow redirect ini
     // karena akan terblokir oleh kebijakan CORS browser.
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
     window.location.href = `${apiUrl}/auth/google`;
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +81,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={`min-h-screen bg-[#fafafa] flex flex-col justify-center py-12 sm:px-6 lg:px-8 ${inter.className}`}>
+    <div
+      className={`min-h-screen bg-[#fafafa] flex flex-col justify-center py-12 sm:px-6 lg:px-8 ${inter.className}`}
+    >
       <div className="sm:mx-auto sm:w-full sm:max-w-[440px]">
         <Link
           href="/"
@@ -88,8 +95,12 @@ export default function LoginPage() {
 
         <div className="bg-white py-10 px-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl border border-gray-100">
           <div className="text-center mb-8">
-            <h2 className="text-[28px] font-semibold tracking-tight text-[#0A0A0A]">Welcome Back</h2>
-            <p className="mt-2 text-[16px] text-[#717182]">Sign in to your account</p>
+            <h2 className="text-[28px] font-semibold tracking-tight text-[#0A0A0A]">
+              Welcome Back
+            </h2>
+            <p className="mt-2 text-[16px] text-[#717182]">
+              Sign in to your account
+            </p>
           </div>
 
           {generalError && (
@@ -101,7 +112,12 @@ export default function LoginPage() {
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-[16px] font-medium text-[#0A0A0A]">Email</label>
+              <label
+                htmlFor="email"
+                className="block text-[16px] font-medium text-[#0A0A0A]"
+              >
+                Email
+              </label>
               <div className="relative mt-2">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
                   <MailIcon className="h-5 w-5 text-[#0A0A0A]/50" />
@@ -127,7 +143,12 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-[16px] font-medium text-[#0A0A0A]">Password</label>
+              <label
+                htmlFor="password"
+                className="block text-[16px] font-medium text-[#0A0A0A]"
+              >
+                Password
+              </label>
               <div className="relative mt-2">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
                   <LockIcon className="h-5 w-5 text-[#0A0A0A]/50" />
@@ -162,7 +183,9 @@ export default function LoginPage() {
               <div className="w-full border-t border-gray-200"></div>
             </div>
             <div className="relative flex justify-center text-[14px]">
-              <span className="px-4 text-[#717182] bg-white">Or continue with</span>
+              <span className="px-4 text-[#717182] bg-white">
+                Or continue with
+              </span>
             </div>
           </div>
 
@@ -174,12 +197,17 @@ export default function LoginPage() {
             className="flex items-center justify-center w-full gap-3 px-4 py-3.5 text-[16px] font-medium text-[#0A0A0A] transition-all bg-white border border-gray-200 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#8A38F5] disabled:opacity-70 disabled:cursor-not-allowed"
           >
             <FcGoogle className="w-[22px] h-[22px]" />
-            <span>{isGoogleSubmitting ? "Connecting to Google..." : "Google"}</span>
+            <span>
+              {isGoogleSubmitting ? "Connecting to Google..." : "Google"}
+            </span>
           </button>
 
           <p className="mt-8 text-center text-[16px] text-[#717182]">
             Don't have an account?{" "}
-            <Link href="/auth/register" className="font-semibold text-[#030213] hover:text-[#8A38F5] transition-colors">
+            <Link
+              href="/auth/register"
+              className="font-semibold text-[#030213] hover:text-[#8A38F5] transition-colors"
+            >
               Sign up
             </Link>
           </p>

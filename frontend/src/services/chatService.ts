@@ -1,4 +1,4 @@
-import { Message } from "@/types";
+import type { Message } from "@/types";
 import { removeChatSession } from "@/utils/removeChatMsgs";
 
 // =============================================================
@@ -10,19 +10,18 @@ export const chatService = {
    * Mengirim pesan user ke AI dan mendapatkan respons.
    * === INTEGRASI BE: Ganti dengan POST /api/chat/send ===
    */
-  async sendMessage(
-    message: string,
-    history: Message[]
-  ): Promise<Message> {
+  async sendMessage(message: string, history: Message[]): Promise<Message> {
     // 1. Simulasi delay network
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // 2. Logika simulasi respons AI berdasarkan jumlah pesan
-    let reply = "Great! I can see several tasks here. Which of these is most urgent or has the closest deadline?";
-    
+    let reply =
+      "Great! I can see several tasks here. Which of these is most urgent or has the closest deadline?";
+
     // Jika user sudah mengirim setidaknya 1 pesan sebelumnya (history.length >= 2 karena termasuk pesan user yang baru saja dikirim di level UI)
     if (history.length >= 2) {
-      reply = "Perfect! Now let me understand your current state to create the best schedule for you.";
+      reply =
+        "Perfect! Now let me understand your current state to create the best schedule for you.";
     }
 
     return {
@@ -64,5 +63,5 @@ export const chatService = {
   clearChat(): void {
     removeChatSession();
     window.dispatchEvent(new Event("chat_updated"));
-  }
+  },
 };

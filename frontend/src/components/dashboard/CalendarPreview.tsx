@@ -6,8 +6,8 @@ import {
   Clock,
   Pencil,
 } from "lucide-react";
-import type { Blueprint } from "./resultStateTypes";
 import { useEffect, useState } from "react";
+import type { Blueprint } from "./resultStateTypes";
 import { DEFAULT_TASK } from "./resultStateUtils";
 
 interface CalendarPreviewProps {

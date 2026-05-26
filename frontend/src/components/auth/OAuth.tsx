@@ -1,9 +1,14 @@
-import React from "react";
+import type React from "react";
 import { FcGoogle } from "react-icons/fc";
 
-interface GoogleOAuthButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
+interface GoogleOAuthButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
 
-export default function GoogleOAuthButton({ className, disabled, ...props }: GoogleOAuthButtonProps) {
+export default function GoogleOAuthButton({
+  className,
+  disabled,
+  ...props
+}: GoogleOAuthButtonProps) {
   return (
     <button
       type="button"

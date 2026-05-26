@@ -56,5 +56,5 @@ button:not(:disabled) {
         [&::-moz-range-thumb]:w-5
         [&::-moz-range-thumb]:rounded-full
         [&::-moz-range-thumb]:border-0
-      [&::-moz-range-thumb]:bg-[#8A38F5]
+      [&::-moz-range-thumb]:bg-[#8A38F5];
 }

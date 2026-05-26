@@ -1,5 +1,5 @@
-import { Message } from "@/types";
 import ReactMarkdown from "react-markdown";
+import type { Message } from "@/types";
 
 interface ChatMessageProps {
   message: Message;

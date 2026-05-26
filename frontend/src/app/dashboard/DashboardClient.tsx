@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useUser } from "@/hooks/useUser";
-import { useChat } from "@/hooks/useChat";
-import { useSchedule } from "@/hooks/useSchedule";
-import { StartState } from "@/components/dashboard/StartState";
 import { AnalyzingState } from "@/components/dashboard/AnalyzingState";
 import { ChatState } from "@/components/dashboard/ChatState";
+import { StartState } from "@/components/dashboard/StartState";
+import { useChat } from "@/hooks/useChat";
+import { useSchedule } from "@/hooks/useSchedule";
+import { useUser } from "@/hooks/useUser";
 import { CreateCalendarPayload } from "@/types";
 import { API_URL, getAppToken } from "@/utils/const";
 
@@ -74,27 +74,35 @@ export default function DashboardClient() {
     setScheduleItems,
   } = useSchedule();
 
-useEffect(() => {
+  useEffect(() => {
     if (hitlPayload?.type !== "task_review") return;
     if (!hitlPayload.proposed_schedule?.length) return; // Patokannya dari proposed_schedule
 
     console.log("hitlPayload tasks: ", hitlPayload.tasks);
-    console.log("hitlPayload proposed_schedule: ", hitlPayload.proposed_schedule);
+    console.log(
+      "hitlPayload proposed_schedule: ",
+      hitlPayload.proposed_schedule,
+    );
 
     // Kita map dari proposed_schedule, lalu kita cari data blueprint pasangannya di array tasks
     const mappedScheduleItems = hitlPayload.proposed_schedule.map(
       (scheduleItem: any) => {
         // Cari blueprint task yang sesuai berdasarkan task_id
         const blueprintTask: any =
-          hitlPayload.tasks?.find((t: any) => t.task_id === scheduleItem.task_id) || {};
+          hitlPayload.tasks?.find(
+            (t: any) => t.task_id === scheduleItem.task_id,
+          ) || {};
 
         return {
           task_id: scheduleItem.task_id,
           title: blueprintTask.title || scheduleItem.task, // Ambil title dari blueprint
           priority: scheduleItem.priority,
           // Bikin string jam "19:00 - 20:00"
-          time: scheduleItem.start_time 
-            ? formatTimeRange(scheduleItem.start_time, scheduleItem.duration_minutes)
+          time: scheduleItem.start_time
+            ? formatTimeRange(
+                scheduleItem.start_time,
+                scheduleItem.duration_minutes,
+              )
             : "Belum dijadwalkan",
           start_time: scheduleItem.start_time, // Simpan format aslinya juga
           category: scheduleItem.category,
@@ -107,7 +115,7 @@ useEffect(() => {
           is_locked_time: blueprintTask.is_locked_time || false,
           locked_start_time: blueprintTask.locked_start_time || null,
         };
-      }
+      },
     );
 
     setScheduleItems(mappedScheduleItems);

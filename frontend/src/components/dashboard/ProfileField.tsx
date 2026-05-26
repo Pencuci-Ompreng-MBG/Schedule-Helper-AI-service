@@ -8,7 +8,12 @@ interface ProfileFieldProps {
 /**
  * Komponen untuk menampilkan satu field informasi di halaman profil (Versi List).
  */
-export function ProfileField({ label, value, icon, isLoading }: ProfileFieldProps) {
+export function ProfileField({
+  label,
+  value,
+  icon,
+  isLoading,
+}: ProfileFieldProps) {
   return (
     <div className="border border-[#E5E7EB] rounded-[12px] p-5 flex flex-col gap-1.5 w-full">
       <div className="flex items-center gap-2.5 text-[#717182]">

@@ -1,20 +1,19 @@
+import { ChevronRight, Folder, X } from "lucide-react";
 import {
-  Dispatch,
-  FormEvent,
-  SetStateAction,
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
   useEffect,
   useState,
 } from "react";
-
-import { Message, RawTasks, ScheduleItem } from "@/types";
-import { HitlPayload, PrioritizerTask, ResumeData } from "@/hooks/useChat";
-import { ChatMessage } from "./ChatMessage";
-import { TypingIndicator } from "./TypingIndicator";
+import ReactMarkdown from "react-markdown";
+import type { HitlPayload, PrioritizerTask, ResumeData } from "@/hooks/useChat";
+import type { Message, RawTasks, ScheduleItem } from "@/types";
 import { ChatInput } from "./ChatInput";
+import { ChatMessage } from "./ChatMessage";
 import { CounselorApproveBar } from "./CounselorApproveBar";
 import { ResultState } from "./ResultState";
-import { X, ChevronRight, Folder } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { TypingIndicator } from "./TypingIndicator";
 
 interface ChatStateProps {
   messages: Message[];
@@ -140,7 +139,7 @@ export function ChatState({
                 scheduleItems={scheduleItems}
                 onApprove={() =>
                   handleSend(null, {
-                    approved: true
+                    approved: true,
                   })
                 }
                 // Jika di parent ada fungsi onEditSchedule atau onEditTask, Anda bisa melemparnya ke sini

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { ScheduleItem } from "../../src/types";
 import {
   buildTaskData,
   DEFAULT_TASK,
   mapScheduleItemsToBlueprints,
   normalizeEstimatedMinutes,
 } from "../../src/components/dashboard/resultStateUtils";
+import type { ScheduleItem } from "../../src/types";
 
 describe("resultStateUtils", () => {
   it("maps schedule items into blueprints with defaults", () => {

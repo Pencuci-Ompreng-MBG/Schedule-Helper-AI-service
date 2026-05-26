@@ -1,6 +1,4 @@
-import { HistoryItem, UserProfile } from "@/types";
-
-import { ScheduleItem } from "@/types";
+import type { HistoryItem, ScheduleItem, UserProfile } from "@/types";
 // =============================================================
 // MOCK DATA: Digunakan sementara sebelum API Backend siap
 // =============================================================
@@ -22,11 +20,11 @@ export const defaultScheduleItems: ScheduleItem[] = [
     subtasks: [
       "Review pending quick tasks",
       "Complete low-effort items",
-      "Update progress tracker"
+      "Update progress tracker",
     ],
     estimated_minutes: 25,
     deadline: "2026-05-14 10:00",
-    preferred_window: "Morning"
+    preferred_window: "Morning",
   },
   {
     task_id: "T-002",
@@ -37,11 +35,11 @@ export const defaultScheduleItems: ScheduleItem[] = [
     subtasks: [
       "Read feedback documents",
       "Highlight revision requests",
-      "Prepare response summary"
+      "Prepare response summary",
     ],
     estimated_minutes: 45,
     deadline: "2026-05-14 13:00",
-    preferred_window: "Morning"
+    preferred_window: "Morning",
   },
   {
     task_id: "T-003",
@@ -49,14 +47,10 @@ export const defaultScheduleItems: ScheduleItem[] = [
     priority: 3,
     time: "10:15 - 10:30",
     category: "Break",
-    subtasks: [
-      "Stretch body",
-      "Drink water",
-      "Relax eyes"
-    ],
+    subtasks: ["Stretch body", "Drink water", "Relax eyes"],
     estimated_minutes: 15,
     deadline: "2026-05-14 10:30",
-    preferred_window: "Morning"
+    preferred_window: "Morning",
   },
   {
     task_id: "T-004",
@@ -67,11 +61,11 @@ export const defaultScheduleItems: ScheduleItem[] = [
     subtasks: [
       "Write introduction",
       "Finalize system architecture",
-      "Review proposal formatting"
+      "Review proposal formatting",
     ],
     estimated_minutes: 120,
     deadline: "2026-05-14 17:00",
-    preferred_window: "Late Morning"
+    preferred_window: "Late Morning",
   },
   {
     task_id: "T-005",
@@ -79,14 +73,10 @@ export const defaultScheduleItems: ScheduleItem[] = [
     priority: 3,
     time: "12:30 - 13:30",
     category: "Break",
-    subtasks: [
-      "Eat lunch",
-      "Take short walk",
-      "Recharge energy"
-    ],
+    subtasks: ["Eat lunch", "Take short walk", "Recharge energy"],
     estimated_minutes: 60,
     deadline: "2026-05-14 13:30",
-    preferred_window: "Afternoon"
+    preferred_window: "Afternoon",
   },
   {
     task_id: "T-006",
@@ -97,12 +87,12 @@ export const defaultScheduleItems: ScheduleItem[] = [
     subtasks: [
       "Prepare agenda",
       "Collect project updates",
-      "Create discussion notes"
+      "Create discussion notes",
     ],
     estimated_minutes: 60,
     deadline: "2026-05-14 15:00",
-    preferred_window: "Afternoon"
-  }
+    preferred_window: "Afternoon",
+  },
 ];
 
 // Data riwayat jadwal default untuk History Page

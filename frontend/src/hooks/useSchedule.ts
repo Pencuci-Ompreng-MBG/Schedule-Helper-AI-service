@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { ScheduleItem, QuestionnairePayload } from "@/types";
-import { scheduleService } from "@/services/scheduleService";
 import { defaultScheduleItems } from "@/data/mockData";
+import { scheduleService } from "@/services/scheduleService";
+import { QuestionnairePayload, type ScheduleItem } from "@/types";
 
 /**
  * Hook untuk mengelola state kuesioner dan hasil pembuatan jadwal.
@@ -14,20 +14,21 @@ export function useSchedule() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isResult, setIsResult] = useState(false);
   const [isEditingSchedule, setIsEditingSchedule] = useState(false);
-  
+
   // Data States
-  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>(defaultScheduleItems);
+  const [scheduleItems, setScheduleItems] =
+    useState<ScheduleItem[]>(defaultScheduleItems);
 
   // const handleGenerateSchedule = async () => {
   //   setIsAnalyzing(true);
-    
+
   //   try {
   //     const payload: QuestionnairePayload = { availableTime };
   //     const result = await scheduleService.generateSchedule(payload);
-      
+
   //     // === INTEGRASI BE: Update state dengan data nyata dari response ===
   //     // setScheduleItems(result.timeline);
-      
+
   //     setIsAnalyzing(false);
   //     setIsResult(true);
   //   } catch (error) {
@@ -37,17 +38,22 @@ export function useSchedule() {
   // };
 
   return {
-    availableTime, setAvailableTime,
-    isDropdownOpen, setIsDropdownOpen,
-    
+    availableTime,
+    setAvailableTime,
+    isDropdownOpen,
+    setIsDropdownOpen,
+
     // Status
     isAnalyzing,
-    isResult, setIsResult,
-    isEditingSchedule, setIsEditingSchedule,
-    
+    isResult,
+    setIsResult,
+    isEditingSchedule,
+    setIsEditingSchedule,
+
     // Data
-    scheduleItems, setScheduleItems,
-    
+    scheduleItems,
+    setScheduleItems,
+
     // Logic
     // handleGenerateSchedule
   };

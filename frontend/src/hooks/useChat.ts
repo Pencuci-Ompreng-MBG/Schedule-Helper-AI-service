@@ -1,8 +1,14 @@
 ﻿"use client";
 
-import { useState, useRef, FormEvent, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Message, QuestionnairePayload, RawTasks } from "@/types";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import type { Message, QuestionnairePayload, RawTasks } from "@/types";
 import { buildUserContent } from "@/utils/chatPayload";
 import { API_URL, getAppToken } from "@/utils/const";
 
@@ -207,7 +213,7 @@ export function useChat(userEmail?: string) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      let chunk = decoder.decode(value, { stream: true });
+      const chunk = decoder.decode(value, { stream: true });
       let combined = controlBuffer + chunk;
       controlBuffer = "";
 

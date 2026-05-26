@@ -1,6 +1,6 @@
-import { ScheduleItem } from "@/types";
-import type { Blueprint, TaskData } from "./resultStateTypes";
 import { timeoutsManager } from "next/dist/server/web/sandbox/resource-managers";
+import type { ScheduleItem } from "@/types";
+import type { Blueprint, TaskData } from "./resultStateTypes";
 
 export const DEFAULT_TASK: TaskData = {
   title: "Untitled Task",

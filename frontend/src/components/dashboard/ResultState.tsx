@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import type { ScheduleItem } from "@/types";
 import { BlueprintSidebar } from "./BlueprintSidebar";
 import { CalendarPreview } from "./CalendarPreview";
-import { TaskEditor } from "./TaskEditor";
 import type { Blueprint, TaskData } from "./resultStateTypes";
 import {
   buildTaskData,
@@ -11,6 +10,7 @@ import {
   mapScheduleItemsToBlueprints,
   normalizeEstimatedMinutes,
 } from "./resultStateUtils";
+import { TaskEditor } from "./TaskEditor";
 
 interface ResultStateProps {
   scheduleItems?: ScheduleItem[];
@@ -73,7 +73,7 @@ export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
     } else {
       value = (target as HTMLInputElement).value;
     }
-    
+
     if (name === "deadline_date") {
       setTaskData((prev) => ({
         ...prev,

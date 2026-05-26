@@ -1,7 +1,7 @@
 "use client";
 
-import { useUser } from "@/hooks/useUser";
 import { ProfileField } from "@/components/dashboard/ProfileField";
+import { useUser } from "@/hooks/useUser";
 
 /**
  * PROFILE PAGE
@@ -13,7 +13,9 @@ export default function ProfilePage() {
     <main className="flex-1 bg-[#FFFFFF] p-8 sm:p-12 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-[28px] font-bold text-[#0A0A0A] mb-1">Profile</h1>
-        <p className="text-[15px] text-[#717182] mb-8">Manage your account information</p>
+        <p className="text-[15px] text-[#717182] mb-8">
+          Manage your account information
+        </p>
 
         {/* Profile Card */}
         <div className="bg-white border border-[#F3F4F6] rounded-[24px] p-10 shadow-sm flex flex-col gap-6">
@@ -55,7 +57,8 @@ export default function ProfilePage() {
           {/* Info Box (Sesuai Gambar 3) */}
           <div className="mt-4 p-6 bg-[#F9FAFB] rounded-[16px] border border-[#F3F4F6]">
             <p className="text-[15px] text-[#717182] leading-relaxed">
-              This is a demo profile. In the full version, you would be able to update your information and preferences here.
+              This is a demo profile. In the full version, you would be able to
+              update your information and preferences here.
             </p>
           </div>
         </div>

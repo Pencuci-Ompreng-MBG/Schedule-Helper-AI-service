@@ -1,4 +1,5 @@
-import React, { useState, type ChangeEvent } from "react";
+import { Button, Dialog, DialogActions } from "@mui/material";
+import dayjs, { type Dayjs } from "dayjs";
 import {
   Check,
   CheckCircle2,
@@ -7,12 +8,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import dayjs, { Dayjs } from "dayjs";
-import { 
-  Dialog, 
-  DialogActions, 
-  Button,
-} from "@mui/material";
+import React, { type ChangeEvent, useState } from "react";
 import type { TaskData } from "./resultStateTypes";
 
 interface TaskEditorProps {
@@ -38,31 +34,31 @@ export function TaskEditor({
 }: TaskEditorProps) {
   const [onEdit, setOnEdit] = useState(false);
   const [openClock, setOpenClock] = useState(false);
-  const [clockView, setClockView] = useState<'hours' | 'minutes'>('hours');
-  
+  const [clockView, setClockView] = useState<"hours" | "minutes">("hours");
+
   const [selectedTime, setSelectedTime] = useState<Dayjs>(
     taskData.deadline?.time
       ? dayjs(`2026-01-01T${taskData.deadline.time}`)
-      : dayjs().hour(7).minute(6)
+      : dayjs().hour(7).minute(6),
   );
 
-  const handleAmPm = (meridiem: 'AM' | 'PM') => {
+  const handleAmPm = (meridiem: "AM" | "PM") => {
     const currentHour = selectedTime.hour();
-    if (meridiem === 'AM' && currentHour >= 12) {
-      setSelectedTime(selectedTime.subtract(12, 'hour'));
-    } else if (meridiem === 'PM' && currentHour < 12) {
-      setSelectedTime(selectedTime.add(12, 'hour'));
+    if (meridiem === "AM" && currentHour >= 12) {
+      setSelectedTime(selectedTime.subtract(12, "hour"));
+    } else if (meridiem === "PM" && currentHour < 12) {
+      setSelectedTime(selectedTime.add(12, "hour"));
     }
   };
 
   const handleNumberClick = (val: number) => {
-    if (clockView === 'hours') {
+    if (clockView === "hours") {
       const isPm = selectedTime.hour() >= 12;
       let newHour = val === 12 ? 0 : val;
       if (isPm) newHour += 12;
-      
+
       setSelectedTime(selectedTime.hour(newHour));
-      setClockView('minutes'); // Auto switch to minutes
+      setClockView("minutes"); // Auto switch to minutes
     } else {
       setSelectedTime(selectedTime.minute(val));
     }
@@ -70,7 +66,7 @@ export function TaskEditor({
 
   const generateClockNumbers = () => {
     const nums = [];
-    if (clockView === 'hours') {
+    if (clockView === "hours") {
       for (let i = 1; i <= 12; i++) {
         const angleDeg = i * 30 - 90;
         const angleRad = angleDeg * (Math.PI / 180);
@@ -80,14 +76,18 @@ export function TaskEditor({
       for (let i = 0; i < 60; i += 5) {
         const angleDeg = i * 6 - 90;
         const angleRad = angleDeg * (Math.PI / 180);
-        nums.push({ val: i, display: i === 0 ? '00' : i.toString(), angle: angleRad });
+        nums.push({
+          val: i,
+          display: i === 0 ? "00" : i.toString(),
+          angle: angleRad,
+        });
       }
     }
     return nums;
   };
 
   const getHandAngle = () => {
-    if (clockView === 'hours') {
+    if (clockView === "hours") {
       return (selectedTime.hour() % 12) * 30;
     }
     return selectedTime.minute() * 6;
@@ -212,7 +212,10 @@ export function TaskEditor({
                     className={`group flex items-center gap-3 border border-slate-200 rounded-2xl px-4 py-3 hover:border-slate-300 transition`}
                   >
                     {/* Drag-and-drop dihapus, icon Grip dibiarkan statis */}
-                    <GripVertical size={16} className="text-slate-300 cursor-default" />
+                    <GripVertical
+                      size={16}
+                      className="text-slate-300 cursor-default"
+                    />
 
                     <CheckCircle2
                       size={18}
@@ -263,7 +266,7 @@ export function TaskEditor({
                 <button
                   type="button"
                   onClick={() => {
-                    setClockView('hours');
+                    setClockView("hours");
                     setOpenClock(true);
                   }}
                   disabled={!onEdit}
@@ -279,51 +282,50 @@ export function TaskEditor({
                     "& .MuiDialog-paper": {
                       borderRadius: "16px",
                       padding: 0,
-                      width: '320px',
-                      overflow: 'hidden',
-                      margin: '16px'
-                    }
+                      width: "320px",
+                      overflow: "hidden",
+                      margin: "16px",
+                    },
                   }}
                 >
                   {/* Header custom matching the image */}
                   <div className="bg-gradient-to-br from-[#f89977] to-[#e45a55] text-white p-8 pb-6 flex justify-center items-center gap-3 select-none">
                     <div className="text-6xl font-bold tracking-wider flex items-center">
-                      <span 
-                        className={`cursor-pointer transition ${clockView === 'hours' ? 'text-white' : 'text-white/60'}`}
-                        onClick={() => setClockView('hours')}
+                      <span
+                        className={`cursor-pointer transition ${clockView === "hours" ? "text-white" : "text-white/60"}`}
+                        onClick={() => setClockView("hours")}
                       >
                         {selectedTime.format("hh")}
                       </span>
                       <span className="text-white/60 mx-1 pb-1">:</span>
-                      <span 
-                        className={`cursor-pointer transition ${clockView === 'minutes' ? 'text-white' : 'text-white/60'}`}
-                        onClick={() => setClockView('minutes')}
+                      <span
+                        className={`cursor-pointer transition ${clockView === "minutes" ? "text-white" : "text-white/60"}`}
+                        onClick={() => setClockView("minutes")}
                       >
                         {selectedTime.format("mm")}
                       </span>
                     </div>
                     <div className="flex flex-col text-sm font-bold ml-1">
-                      <button 
+                      <button
                         type="button"
                         className={`transition cursor-pointer hover:opacity-100 ${selectedTime.format("A") === "AM" ? "text-white opacity-100" : "text-white opacity-50"}`}
-                        onClick={() => handleAmPm('AM')}
+                        onClick={() => handleAmPm("AM")}
                       >
                         AM
                       </button>
-                      <button 
+                      <button
                         type="button"
                         className={`transition cursor-pointer hover:opacity-100 ${selectedTime.format("A") === "PM" ? "text-white opacity-100" : "text-white opacity-50"}`}
-                        onClick={() => handleAmPm('PM')}
+                        onClick={() => handleAmPm("PM")}
                       >
                         PM
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Custom Analog Clock */}
                   <div className="pt-8 pb-6 flex justify-center bg-white select-none">
                     <div className="relative w-[240px] h-[240px] bg-[#f0f0f0] rounded-full flex items-center justify-center">
-                      
                       {/* Center Dot */}
                       <div className="w-2 h-2 bg-[#e45a55] rounded-full absolute z-10" />
 
@@ -331,27 +333,28 @@ export function TaskEditor({
                       <div
                         className="absolute w-[2px] bg-[#e45a55] origin-bottom z-10 transition-transform duration-300 ease-out"
                         style={{
-                          height: '92px',
-                          bottom: '120px',
-                          left: 'calc(50% - 1px)',
-                          transform: `rotate(${getHandAngle()}deg)`
+                          height: "92px",
+                          bottom: "120px",
+                          left: "calc(50% - 1px)",
+                          transform: `rotate(${getHandAngle()}deg)`,
                         }}
                       />
 
                       {/* Numbers */}
                       {clockNumbers.map((num) => {
-                        const isSelected = clockView === 'hours' 
-                          ? num.val === currentHour12 
-                          : num.val === currentMinute;
+                        const isSelected =
+                          clockView === "hours"
+                            ? num.val === currentHour12
+                            : num.val === currentMinute;
 
                         return (
                           <button
                             key={num.val}
                             onClick={() => handleNumberClick(num.val)}
                             className={`absolute w-8 h-8 flex items-center justify-center text-sm rounded-full z-20 transition-colors ${
-                              isSelected 
-                                ? 'bg-[#e45a55] text-white' 
-                                : 'text-slate-700 hover:bg-slate-200/60'
+                              isSelected
+                                ? "bg-[#e45a55] text-white"
+                                : "text-slate-700 hover:bg-slate-200/60"
                             }`}
                             style={{
                               left: `calc(50% + ${Math.cos(num.angle) * 92}px - 16px)`,
@@ -365,10 +368,21 @@ export function TaskEditor({
                     </div>
                   </div>
 
-                  <DialogActions sx={{ padding: "8px 24px 20px 24px", justifyContent: "flex-end", gap: 1 }}>
-                    <Button 
+                  <DialogActions
+                    sx={{
+                      padding: "8px 24px 20px 24px",
+                      justifyContent: "flex-end",
+                      gap: 1,
+                    }}
+                  >
+                    <Button
                       onClick={() => setOpenClock(false)}
-                      sx={{ color: '#e45a55', fontWeight: 'bold', fontSize: '14px', padding: '6px 16px' }}
+                      sx={{
+                        color: "#e45a55",
+                        fontWeight: "bold",
+                        fontSize: "14px",
+                        padding: "6px 16px",
+                      }}
                     >
                       CLOSE
                     </Button>
@@ -383,14 +397,14 @@ export function TaskEditor({
                         } as ChangeEvent<HTMLInputElement>);
                         setOpenClock(false);
                       }}
-                      sx={{ 
-                        backgroundColor: '#e45a55', 
-                        borderRadius: '24px',
-                        padding: '6px 20px',
-                        fontWeight: 'bold',
-                        fontSize: '14px',
-                        '&:hover': { backgroundColor: '#d14945' },
-                        boxShadow: 'none'
+                      sx={{
+                        backgroundColor: "#e45a55",
+                        borderRadius: "24px",
+                        padding: "6px 20px",
+                        fontWeight: "bold",
+                        fontSize: "14px",
+                        "&:hover": { backgroundColor: "#d14945" },
+                        boxShadow: "none",
                       }}
                     >
                       SET
@@ -401,7 +415,7 @@ export function TaskEditor({
             </div>
 
             <div className="flex gap-3 pt-2">
-              <button 
+              <button
                 disabled={!onEdit}
                 className={`flex-1 h-12 rounded-2xl border border-slate-200 font-medium text-slate-700 transition ${!onEdit ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-50"}`}
               >

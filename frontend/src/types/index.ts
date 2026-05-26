@@ -34,13 +34,13 @@ export type ScheduleItem = {
   task_id: string;
   title: string;
   priority: number;
-  time: string;           // Hasil format jam (misal "19:00 - 20:00")
-  start_time?: string;    // String ISO aslinya
+  time: string; // Hasil format jam (misal "19:00 - 20:00")
+  start_time?: string; // String ISO aslinya
   category: string;
   subtasks: string[];
-  estimated_minutes: number; 
-  deadline: string | null; 
-  preferred_window: string; 
+  estimated_minutes: number;
+  deadline: string | null;
+  preferred_window: string;
   is_locked_time?: boolean;
   locked_start_time?: string;
 };
@@ -71,4 +71,24 @@ export interface RawTasks {
   raw_time: string;
   task_id: string;
   title: string;
+}
+
+export interface CalendarTask {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  category: string;
+  rawInput?: string | null;
+  rawTime?: string | null;
+  estimatedMinutes?: number | null;
+  priority?: number | null;
+  deadline?: string | null;
+  startTime?: string | null;
+  status: string;
+  googleEventId?: string | null;
+  googleTaskId?: string | null;
+  subtasks: string[];
+  createdAt: string;
+  updatedAt: string;
 }

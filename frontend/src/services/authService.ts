@@ -1,4 +1,4 @@
-import { UserProfile } from "@/types";
+import type { UserProfile } from "@/types";
 import { API_URL } from "@/utils/const";
 
 /**
@@ -19,7 +19,7 @@ export const authService = {
   async getCurrentUser(): Promise<UserProfile> {
     const storage = getSafeStorage();
     const token = storage ? storage.getItem("app_token") : null;
-    
+
     if (!token) {
       throw new Error("No token found");
     }

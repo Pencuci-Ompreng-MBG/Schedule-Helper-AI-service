@@ -1,25 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HistoryItem } from "@/types";
-import { scheduleService } from "@/services/scheduleService";
 import { HistoryCard } from "@/components/dashboard/HistoryCard";
+import { scheduleService } from "@/services/scheduleService";
+import type { HistoryItem } from "@/types";
 
 /**
  * HISTORY PAGE
- * Menampilkan daftar riwayat jadwal yang pernah dibuat.
+ * Menampilkan daftar riwayat sesi chat yang pernah dilakukan user.
+ * Data diambil dari GET /api/agent (backend NestJS).
  */
 export default function HistoryPage() {
   const [historyData, setHistoryData] = useState<HistoryItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
+        setError(null);
         const data = await scheduleService.getHistory();
         setHistoryData(data);
       } catch (e) {
         console.error("Failed to fetch history:", e);
+        setError("Gagal memuat riwayat. Pastikan kamu sudah login.");
       } finally {
         setIsLoading(false);
       }
@@ -30,8 +34,12 @@ export default function HistoryPage() {
   return (
     <main className="flex-1 flex flex-col h-full bg-[#FFFFFF]">
       <div className="px-8 pt-10 pb-6 shrink-0">
-        <h1 className="text-[26px] font-semibold text-[#0A0A0A] mb-1">Schedule History</h1>
-        <p className="text-[15px] text-[#717182]">View all your past schedules and task plans</p>
+        <h1 className="text-[26px] font-semibold text-[#0A0A0A] mb-1">
+          Schedule History
+        </h1>
+        <p className="text-[15px] text-[#717182]">
+          View all your past schedules and task plans
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-8 pb-10">
@@ -55,20 +63,56 @@ export default function HistoryPage() {
             </>
           )}
 
-          {/* Empty State */}
-          {!isLoading && historyData?.length === 0 && (
-            <div className="flex flex-col items-center justify-center text-center mt-20 p-10 border border-dashed border-gray-200 rounded-[16px] bg-gray-50">
-              <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          {/* Error State */}
+          {!isLoading && error && (
+            <div className="flex flex-col items-center justify-center text-center mt-20 p-10 border border-dashed border-red-200 rounded-[16px] bg-red-50">
+              <svg
+                className="w-12 h-12 text-red-400 mb-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
-              <p className="text-[15px] text-[#717182] font-medium">No history found. Start your first session on the Dashboard!</p>
+              <p className="text-[15px] text-red-500 font-medium">{error}</p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && !error && historyData?.length === 0 && (
+            <div className="flex flex-col items-center justify-center text-center mt-20 p-10 border border-dashed border-gray-200 rounded-[16px] bg-gray-50">
+              <svg
+                className="w-12 h-12 text-gray-400 mb-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p className="text-[15px] text-[#717182] font-medium">
+                No history found. Start your first session on the Dashboard!
+              </p>
             </div>
           )}
 
           {/* History Cards */}
-          {!isLoading && historyData && historyData.length > 0 &&
-            historyData.map((item) => <HistoryCard key={item.id} item={item} />)
-          }
+          {!isLoading &&
+            !error &&
+            historyData &&
+            historyData.length > 0 &&
+            historyData.map((item) => (
+              <HistoryCard key={item.id} item={item} />
+            ))}
         </div>
       </div>
     </main>
