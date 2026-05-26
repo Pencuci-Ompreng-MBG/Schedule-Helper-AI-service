@@ -41,6 +41,7 @@ interface ChatStateProps {
   setIsResult: Dispatch<SetStateAction<boolean>>;
   setIsAnalyzing: Dispatch<SetStateAction<boolean>>;
   prioritizerTasks: PrioritizerTask[] | undefined;
+  footerOverride?: React.ReactNode;
 }
 
 export function ChatState({
@@ -53,6 +54,7 @@ export function ChatState({
   messagesEndRef,
   hitlPayload,
   scheduleItems,
+  footerOverride,
 }: ChatStateProps) {
   const [isOpenRawTasks, setIsOpenRawTasks] = useState(false);
   const [rawTasks, setRawTasks] = useState<RawTasks[] | null>(null);
@@ -157,36 +159,40 @@ export function ChatState({
           </div>
         </div>
 
-        <ChatInput
-          value={inputValue}
-          onChange={setInputValue}
-          onSubmit={handleInputSubmit}
-          disabled={isTyping}
-          placeholder={
-            isAwaitingApproval
-              ? "Ketik di sini untuk menambah cerita..."
-              : "Type your message..."
-          }
-          counselorBar={
-            hitlPayload?.type === "counselor_review" && (
-              <CounselorApproveBar
-                payload={hitlPayload}
-                onApprove={(editedDraft) =>
-                  handleSend(null, {
-                    approved: true,
-                    additional_context: editedDraft ?? null,
-                  })
-                }
-                onReject={() =>
-                  handleSend(null, {
-                    approved: false,
-                    additional_context: null,
-                  })
-                }
-              />
-            )
-          }
-        />
+        {footerOverride ? (
+          footerOverride
+        ) : (
+          <ChatInput
+            value={inputValue}
+            onChange={setInputValue}
+            onSubmit={handleInputSubmit}
+            disabled={isTyping}
+            placeholder={
+              isAwaitingApproval
+                ? "Ketik di sini untuk menambah cerita..."
+                : "Type your message..."
+            }
+            counselorBar={
+              hitlPayload?.type === "counselor_review" && (
+                <CounselorApproveBar
+                  payload={hitlPayload}
+                  onApprove={(editedDraft) =>
+                    handleSend(null, {
+                      approved: true,
+                      additional_context: editedDraft ?? null,
+                    })
+                  }
+                  onReject={() =>
+                    handleSend(null, {
+                      approved: false,
+                      additional_context: null,
+                    })
+                  }
+                />
+              )
+            }
+          />
+        )}
       </div>
 
       {/* ── Raw Tasks Sidebar Panel ── */}

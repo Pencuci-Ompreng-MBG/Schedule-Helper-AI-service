@@ -38,10 +38,13 @@ describe("resultStateUtils", () => {
 
     const [first, second] = mapScheduleItemsToBlueprints(items);
 
-    expect(first.deadline).toBe("");
+    expect(first.deadline).toEqual({ date: "", time: "" });
     expect(first.time).toBe("Belum dijadwalkan");
     expect(first.isSpecificTime).toBe(true);
-    expect(first.specific_start_time).toBe("08:00");
+    expect(first.specific_start_time).toEqual({
+      date: "17-05-2026",
+      time: "08:00",
+    });
     expect(second.time).toBe("19:00 - 20:00");
   });
 

@@ -58,7 +58,7 @@ export type PrioritizerTask = {
 
 export type ExecutionComplete = {
   thread_id: string;
-  status: "completed" | "waiting_hitl";
+  status: "completed" | "waiting_hitl" | "done";
   next_node?: string[];
   hitl_payload?: HitlPayload;
 };
@@ -76,6 +76,8 @@ export function useChat(userEmail?: string) {
   const [isStarted, setIsStarted] = useState(false);
   const [hitlPayload, setHitlPayload] = useState<HitlPayload | null>(null);
   const [currentAgentStep, setCurrentAgentStep] = useState<string | null>(null);
+  const [isSchedulingDone, setIsSchedulingDone] = useState(false);
+  const [scheduledEventCount, setScheduledEventCount] = useState(0);
 
   useEffect(() => {
     if (!hitlPayload && !messages?.length) return;
@@ -238,6 +240,14 @@ export function useChat(userEmail?: string) {
               if (execData.hitl_payload.message) {
                 replacementText = execData.hitl_payload.message;
               }
+            } else if (execData.status === "done") {
+              setIsSchedulingDone(true);
+              setHitlPayload((prev) => {
+                if (prev && "proposed_schedule" in prev) {
+                  setScheduledEventCount(prev.proposed_schedule.length);
+                }
+                return null;
+              });
             } else {
               setHitlPayload(null);
             }
@@ -352,6 +362,8 @@ export function useChat(userEmail?: string) {
     // 1. Reset UI & Preparation
     setHitlPayload(null);
     setCurrentAgentStep(null);
+    setIsSchedulingDone(false);
+    setScheduledEventCount(0);
     setInputValue(""); // Bersihkan input (aman dilakukan di kedua kondisi)
     setIsStarted(true);
     setIsTyping(true);
@@ -438,15 +450,30 @@ export function useChat(userEmail?: string) {
     });
   };
 
+  const resetChat = () => {
+    sessionStorage.removeItem("chat_messages");
+    sessionStorage.removeItem("raw_tasks");
+    setMessages([]);
+    setIsStarted(false);
+    setHitlPayload(null);
+    setIsSchedulingDone(false);
+    setScheduledEventCount(0);
+    setCurrentAgentStep(null);
+    router.replace(pathname);
+  };
+
   return {
     messages,
     inputValue,
     setInputValue,
     isTyping,
     currentAgentStep,
+    isSchedulingDone,
+    scheduledEventCount,
     isStarted,
     messagesEndRef,
     hitlPayload,
     handleSend,
+    resetChat,
   };
 }

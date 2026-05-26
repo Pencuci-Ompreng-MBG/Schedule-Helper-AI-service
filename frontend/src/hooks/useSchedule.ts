@@ -14,6 +14,7 @@ export function useSchedule() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isResult, setIsResult] = useState(false);
   const [isEditingSchedule, setIsEditingSchedule] = useState(false);
+  const [isSubmittingToCalendar, setIsSubmittingToCalendar] = useState(false);
 
   // Data States
   const [scheduleItems, setScheduleItems] =
@@ -49,6 +50,8 @@ export function useSchedule() {
     setIsResult,
     isEditingSchedule,
     setIsEditingSchedule,
+    isSubmittingToCalendar,
+    setIsSubmittingToCalendar,
 
     // Data
     scheduleItems,

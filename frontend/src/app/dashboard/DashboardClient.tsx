@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { AnalyzingState } from "@/components/dashboard/AnalyzingState";
 import { ChatState } from "@/components/dashboard/ChatState";
 import { StartState } from "@/components/dashboard/StartState";
-import { useChat } from "@/hooks/useChat";
+import { SubmittingState } from "@/components/dashboard/SubmittingState";
+import { SuccessState } from "@/components/dashboard/SuccessState";
+import { type ResumeData, useChat } from "@/hooks/useChat";
 import { useSchedule } from "@/hooks/useSchedule";
 import { useUser } from "@/hooks/useUser";
-import { CreateCalendarPayload } from "@/types";
+import { CreateCalendarPayload, type QuestionnairePayload } from "@/types";
 import { API_URL, getAppToken } from "@/utils/const";
 
 const formatTimeRange = (startTime: string, durationMinutes: number) => {
@@ -55,10 +57,13 @@ export default function DashboardClient() {
     setInputValue,
     isTyping,
     currentAgentStep,
+    isSchedulingDone,
+    scheduledEventCount,
     isStarted,
     messagesEndRef,
     handleSend,
     hitlPayload,
+    resetChat,
   } = useChat(user?.email);
 
   const {
@@ -73,6 +78,8 @@ export default function DashboardClient() {
     setIsEditingSchedule,
     scheduleItems,
     setScheduleItems,
+    isSubmittingToCalendar,
+    setIsSubmittingToCalendar,
   } = useSchedule();
 
   useEffect(() => {
@@ -125,8 +132,40 @@ export default function DashboardClient() {
     console.log("Schedulet Items : ", scheduleItems);
   }, [scheduleItems]);
 
+  const handleSendWrapper = async (
+    e: FormEvent | null,
+    resumeData?: ResumeData,
+    questionnaireData?: QuestionnairePayload,
+  ) => {
+    const isApprove =
+      resumeData && "approved" in resumeData && resumeData.approved === true;
+    if (isApprove) {
+      setIsSubmittingToCalendar(true);
+    }
+
+    try {
+      await handleSend(e, resumeData, questionnaireData);
+    } catch (error) {
+      console.error("Gagal memproses pengiriman:", error);
+    } finally {
+      if (isApprove) {
+        setIsSubmittingToCalendar(false);
+      }
+    }
+  };
+
   if (isAnalyzing) {
     return <AnalyzingState />;
+  }
+
+  if (isSubmittingToCalendar) {
+    return <SubmittingState />;
+  }
+
+  if (isSchedulingDone) {
+    return (
+      <SuccessState eventCount={scheduledEventCount} onReset={resetChat} />
+    );
   }
 
   if (!isStarted) {
@@ -138,7 +177,7 @@ export default function DashboardClient() {
         inputValue={inputValue}
         setInputValue={setInputValue}
         isTyping={isTyping}
-        handleSend={handleSend}
+        handleSend={handleSendWrapper}
         energyLevel={energyLevel}
         setEnergyLevel={setEnergyLevel}
         mood={mood}
@@ -158,7 +197,7 @@ export default function DashboardClient() {
       currentAgentStep={currentAgentStep}
       inputValue={inputValue}
       setInputValue={setInputValue}
-      handleSend={handleSend}
+      handleSend={handleSendWrapper}
       messagesEndRef={messagesEndRef}
       hitlPayload={hitlPayload}
       scheduleItems={scheduleItems}

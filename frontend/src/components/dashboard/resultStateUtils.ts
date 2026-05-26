@@ -34,7 +34,7 @@ export const mapScheduleItemsToBlueprints = (
     isSpecificTime: item.is_locked_time ?? false,
     specific_start_time: {
       date: item.start_time?.split("T")[0] ?? "17-05-2026",
-      time: item.start_time?.split("T")[1] ?? "19:00",
+      time: item.start_time?.split("T")[1] ?? item.locked_start_time ?? "19:00",
     },
     time: item.time || "Belum dijadwalkan",
   }));

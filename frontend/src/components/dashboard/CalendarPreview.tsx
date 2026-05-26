@@ -134,7 +134,7 @@ export function CalendarPreview({
 
                   <span>
                     {data.isSpecificTime
-                      ? `${data.specific_start_time} - Selesai`
+                      ? `${data.specific_start_time.time} - Selesai`
                       : data.time}
                   </span>
 

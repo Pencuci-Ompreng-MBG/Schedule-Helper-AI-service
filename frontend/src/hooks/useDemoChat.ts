@@ -1,61 +1,48 @@
-import { useEffect, useRef, useState } from "react";
-import type { Message } from "@/types";
+"use client";
+
+import { type FormEvent, useEffect, useState } from "react";
+import type { QuestionnairePayload } from "@/types";
+import { type ResumeData, useChat } from "./useChat";
 
 /**
  * HOOK: Mengelola logika percakapan khusus untuk halaman DEMO.
- * Versi perbaikan sesuai desain asli (Gambar 1).
+ * Membungkus fungsionalitas useChat secara internal dan menambahkan pembatasan 3 pesan.
  */
-export function useDemoChat() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "system",
-      content:
-        "Welcome to Schedule Helper! Write all your thoughts, tasks, and plans freely. I'll help you organize them.",
-    },
-  ]);
-  const [inputValue, setInputValue] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+export function useDemoChat(userEmail?: string) {
+  const chat = useChat(userEmail);
   const [isLimitReached, setIsLimitReached] = useState(false);
-  const [messageCount, setMessageCount] = useState(1);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Menghitung jumlah pesan user aktif
+  const userMessages = chat.messages.filter((m) => m.role === "user");
+  const messageCount = userMessages.length;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+    // Batasan maksimal 3 pesan dari user
+    if (messageCount >= 3) {
+      setIsLimitReached(true);
+    } else {
+      setIsLimitReached(false);
+    }
+  }, [messageCount]);
 
-  const handleSend = async () => {
-    if (!inputValue.trim() || isLimitReached) return;
+  const handleSend = async (
+    e: FormEvent | null,
+    resumeData?: ResumeData,
+    questionnaireData?: QuestionnairePayload,
+  ) => {
+    // Cegah pengiriman jika limit sudah tercapai (kecuali input berasal dari tombol persetujuan HITL/Resume)
+    if (messageCount >= 3 && !resumeData) {
+      setIsLimitReached(true);
+      return;
+    }
 
-    const userMessage: Message = { role: "user", content: inputValue };
-    setMessages((prev) => [...prev, userMessage]);
-    setInputValue("");
-    setIsTyping(true);
-    setMessageCount((prev) => prev + 1);
-
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        role: "system",
-        content:
-          "Thanks for sharing! I can see you have several tasks. Let me ask a few questions to help prioritize. Which of these tasks has the most urgent deadline?",
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsTyping(false);
-
-      const newCount = messageCount + 1;
-      if (newCount >= 3) {
-        setIsLimitReached(true);
-      }
-    }, 1500);
+    await chat.handleSend(e, resumeData, questionnaireData);
   };
 
   return {
-    messages,
-    inputValue,
-    setInputValue,
-    isTyping,
+    ...chat,
+    handleSend,
     isLimitReached,
     messageCount,
-    messagesEndRef,
-    handleSend,
   };
 }
