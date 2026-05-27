@@ -15,6 +15,8 @@ function CallbackHandler() {
     const processLogin = async () => {
       if (token) {
         try {
+          sessionStorage.removeItem("chat_messages");
+          sessionStorage.removeItem("raw_tasks");
           sessionStorage.setItem("app_token", token);
 
           await authService.getCurrentUser();

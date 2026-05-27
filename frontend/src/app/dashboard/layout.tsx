@@ -75,7 +75,7 @@ export default function DashboardLayout({
           <div className="flex flex-col bg-gray-50 h-full">
             <div className="p-6 pb-8 border-b border-gray-100 group-[content]: ">
               <Link
-                href="/"
+                href="/dashboard"
                 onClick={() => chatService.clearChat()}
                 className="text-[20px] font-bold text-[#0A0A0A] cursor-pointer no-underline block"
               >
@@ -186,7 +186,7 @@ export default function DashboardLayout({
           <div className="flex flex-col bg-gray-50 h-full">
             <div className="p-6 pb-8 border-b border-gray-100 group-[content]:">
               <Link
-                href="/"
+                href="/dashboard"
                 onClick={() => chatService.clearChat()}
                 className="text-[20px] font-bold text-[#0A0A0A] cursor-pointer no-underline block"
               >

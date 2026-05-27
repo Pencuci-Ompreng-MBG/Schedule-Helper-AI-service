@@ -13,6 +13,16 @@ import { UseGuards, Req, Get } from '@nestjs/common';
 import { GoogleGuard } from './guard/google.guard.js';
 import { Response } from 'express';
 
+/** Opsi default untuk cookie autentikasi */
+const COOKIE_NAME = 'cookie_token';
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: 24 * 60 * 60 * 1000, // 1 hari (ms)
+};
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -26,8 +36,10 @@ export class AuthController {
   @ApiBody({ type: RegisterDto })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 403, description: 'Email already in use' })
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+    const tokenData = await this.authService.register(dto);
+    res.cookie(COOKIE_NAME, tokenData.access_token, COOKIE_OPTIONS);
+    return tokenData;
   }
 
   /**
@@ -39,21 +51,27 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   @ApiResponse({ status: 200, description: 'Login successful, returns JWT' })
   @ApiResponse({ status: 403, description: 'Invalid credentials' })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const tokenData = await this.authService.login(dto);
+    res.cookie(COOKIE_NAME, tokenData.access_token, COOKIE_OPTIONS);
+    return tokenData;
   }
 
   /**
-   * Endpoint untuk logout. 
-   * (Di backend hanya mengembalikan pesan sukses, penghapusan token dilakukan di frontend).
+   * Endpoint untuk logout.
+   * Menghapus cookie autentikasi dan mengembalikan pesan sukses.
    */
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   @ApiOperation({ summary: 'Logout user' })
   @ApiResponse({ status: 200, description: 'Logout successful' })
-  logout() {
-    // JWT is stateless on the backend. True logout is clearing the token on the frontend.
-    // This endpoint exists to frontend expectations.
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie(COOKIE_NAME, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+    });
     return { message: 'Logged out successfully' };
   }
 
@@ -69,17 +87,17 @@ export class AuthController {
 
   /**
    * Callback endpoint setelah user berhasil login di halaman Google.
-   * Akan meredirect user kembali ke frontend dengan membawa JWT token.
+   * Set cookie autentikasi, lalu redirect user kembali ke frontend.
    */
   @Get('google/callback')
   @UseGuards(GoogleGuard)
   @ApiOperation({ summary: 'Google OAuth2 callback URL' })
   async googleAuthRedirect(@Req() req: any, @Res() res: Response) {
-    // Tambahkan @Res() res: Response di sini
     const tokenData = await this.authService.googleLogin(req);
-
-    // Asumsikan tokenData mengembalikan object { access_token: "..." }
     const token = tokenData.access_token;
+
+    // Set cookie sebelum redirect
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     return res.redirect(`${frontendUrl}/auth/callback?token=${token}`);

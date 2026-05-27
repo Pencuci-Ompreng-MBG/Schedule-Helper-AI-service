@@ -121,6 +121,7 @@ export const scheduleService = {
 
     const response = await fetch(`${API_URL}/agent`, {
       method: "GET",
+      credentials: "include",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -152,6 +153,7 @@ export const scheduleService = {
 
     const response = await fetch(`${API_URL}/agent/${id}`, {
       method: "GET",
+      credentials: "include",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -182,6 +184,7 @@ export const scheduleService = {
 
     const response = await fetch(`${API_URL}/calendar`, {
       method: "GET",
+      credentials: "include",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",

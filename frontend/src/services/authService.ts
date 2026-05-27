@@ -27,6 +27,7 @@ export const authService = {
     try {
       const response = await fetch(`${API_URL}/users/me`, {
         method: "GET",
+        credentials: "include",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -66,7 +67,7 @@ export const authService = {
     }
 
     try {
-      await fetch(`${API_URL}/auth/logout`, { method: "POST" });
+      await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
     } catch (e) {
       // Abaikan jika API gagal saat logout
     }
@@ -78,6 +79,7 @@ export const authService = {
   async login(email: string, password: string): Promise<void> {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -93,6 +95,8 @@ export const authService = {
     if (data.access_token) {
       const storage = getSafeStorage();
       if (storage) {
+        storage.removeItem("chat_messages");
+        storage.removeItem("raw_tasks");
         storage.setItem("app_token", data.access_token);
       }
       await this.getCurrentUser();
@@ -107,6 +111,7 @@ export const authService = {
   async register(name: string, email: string, password: string): Promise<void> {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -122,6 +127,8 @@ export const authService = {
     if (data.access_token) {
       const storage = getSafeStorage();
       if (storage) {
+        storage.removeItem("chat_messages");
+        storage.removeItem("raw_tasks");
         storage.setItem("app_token", data.access_token);
         const userData: UserProfile = { name, email };
         this.saveUserToSession(userData);
@@ -135,7 +142,7 @@ export const authService = {
    * Menangani redirect OAuth (Google/etc).
    */
   async oauth(provider: string = "google"): Promise<void> {
-    const response = await fetch(`${API_URL}/auth/${provider}`);
+    const response = await fetch(`${API_URL}/auth/${provider}`, { credentials: "include" });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

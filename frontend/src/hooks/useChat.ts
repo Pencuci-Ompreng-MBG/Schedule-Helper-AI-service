@@ -127,6 +127,7 @@ export function useChat(userEmail?: string) {
 
       try {
         const response = await fetch(`${API_URL}/agent/${current}`, {
+          credentials: "include",
           headers: {
             Authorization: `Bearer ${token}`,
           },
