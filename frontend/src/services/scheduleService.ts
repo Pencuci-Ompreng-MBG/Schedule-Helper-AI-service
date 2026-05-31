@@ -202,4 +202,36 @@ export const scheduleService = {
 
     return response.json();
   },
+
+  /**
+   * Memperbarui tugas kalender (contoh: mengubah status menjadi completed).
+   * Terintegrasi dengan PATCH /api/calendar/:id
+   */
+  async updateCalendarTask(id: string, payload: any): Promise<any> {
+    const token = getAppToken();
+
+    if (!token) {
+      console.warn("[scheduleService.updateCalendarTask] No auth token found.");
+      return null;
+    }
+
+    const response = await fetch(`${API_URL}/calendar/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      console.error(
+        `[scheduleService.updateCalendarTask] Failed: ${response.status} ${response.statusText}`,
+      );
+      throw new Error(`Gagal memperbarui tugas: ${response.statusText}`);
+    }
+
+    return response.json();
+  },
 };

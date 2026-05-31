@@ -33,6 +33,10 @@ export default function CalendarPage() {
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(
     {},
   );
+  // Simpan status subtask di lokal (karena di DB hanya berupa array of strings)
+  const [subtaskStatus, setSubtaskStatus] = useState<Record<string, boolean>>({});
+  // Status loading individu per tugas saat dicentang
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [iframeKey, setIframeKey] = useState(0);
 
   // Load awal data tugas/jadwal
@@ -83,6 +87,31 @@ export default function CalendarPage() {
     setExpandedTasks((prev) => ({
       ...prev,
       [taskId]: !prev[taskId],
+    }));
+  };
+
+  const handleToggleMainTask = async (taskId: string, currentStatus: string) => {
+    if (updatingTaskId) return;
+    const newStatus = currentStatus === "completed" ? "scheduled" : "completed";
+    setUpdatingTaskId(taskId);
+    try {
+      await scheduleService.updateCalendarTask(taskId, { status: newStatus });
+      // Update local state
+      setTasks((prev) => 
+        prev ? prev.map((t) => t.id === taskId ? { ...t, status: newStatus } : t) : null
+      );
+    } catch (e) {
+      console.error("Gagal mengubah status tugas:", e);
+    } finally {
+      setUpdatingTaskId(null);
+    }
+  };
+
+  const handleToggleSubtask = (taskId: string, index: number) => {
+    const key = `${taskId}-${index}`;
+    setSubtaskStatus((prev) => ({
+      ...prev,
+      [key]: !prev[key],
     }));
   };
 
@@ -235,10 +264,29 @@ export default function CalendarPage() {
                         </div>
                       </div>
 
-                      {/* Title & Description */}
-                      <h3 className="text-[17px] font-bold text-[#0A0A0A] mb-1.5 leading-snug">
-                        {task.title}
-                      </h3>
+                      {/* Title & Checkbox */}
+                      <div className="flex items-start gap-3 mb-1.5">
+                        <button
+                          onClick={() => handleToggleMainTask(task.id, task.status)}
+                          disabled={updatingTaskId === task.id}
+                          className={`mt-0.5 shrink-0 w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                            task.status === "completed"
+                              ? "bg-emerald-500 border-emerald-500 text-white"
+                              : "border-gray-300 hover:border-emerald-500 text-transparent hover:text-emerald-500"
+                          } ${updatingTaskId === task.id ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                        >
+                          {updatingTaskId === task.id ? (
+                            <RotateCw className="w-3.5 h-3.5 animate-spin text-gray-400" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <h3 className={`text-[17px] font-bold leading-snug transition-colors ${
+                          task.status === "completed" ? "text-gray-400 line-through" : "text-[#0A0A0A]"
+                        }`}>
+                          {task.title}
+                        </h3>
+                      </div>
                       {task.description && (
                         <p className="text-[13px] text-gray-500 line-clamp-2 mb-3 leading-relaxed">
                           {task.description}
@@ -306,17 +354,32 @@ export default function CalendarPage() {
 
                           {isExpanded && (
                             <div className="mt-3 pl-2 border-l-2 border-gray-100 space-y-2 animate-fadeIn">
-                              {task.subtasks.map((sub, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex items-start gap-2.5"
-                                >
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                                  <span className="text-[13px] text-slate-700 leading-normal">
-                                    {sub}
-                                  </span>
-                                </div>
-                              ))}
+                              {task.subtasks.map((sub, idx) => {
+                                const isSubCompleted = !!subtaskStatus[`${task.id}-${idx}`];
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="flex items-start gap-2.5 group"
+                                  >
+                                    <button
+                                      onClick={() => handleToggleSubtask(task.id, idx)}
+                                      className={`mt-0.5 shrink-0 w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors cursor-pointer ${
+                                        isSubCompleted
+                                          ? "bg-emerald-500 border-emerald-500 text-white"
+                                          : "border-gray-300 group-hover:border-emerald-500 text-transparent group-hover:text-emerald-500"
+                                      }`}
+                                    >
+                                      <Check className="w-3 h-3" />
+                                    </button>
+                                    <span className={`text-[13px] leading-normal transition-colors cursor-pointer select-none ${
+                                      isSubCompleted ? "text-gray-400 line-through" : "text-slate-700"
+                                    }`}
+                                    onClick={() => handleToggleSubtask(task.id, idx)}>
+                                      {sub}
+                                    </span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
