@@ -131,9 +131,16 @@ export function ChatState({
                           <AgentStepIndicator currentStep={currentAgentStep} />
                           <TypingIndicator />
                         </div>
-                      ) : hitlPayload?.type === "counselor_chat" ||
-                        hitlPayload?.type === "counselor_review" ? (
-                        <ChatMessage message={msg} payload={hitlPayload} />
+                      ) : isLastIndex && (hitlPayload?.type === "counselor_chat" ||
+                        hitlPayload?.type === "counselor_review") ? (
+                        <ChatMessage 
+                          message={{
+                            ...msg,
+                            content: msg.content.includes(hitlPayload.message)
+                              ? msg.content
+                              : msg.content + "\n\n" + hitlPayload.message
+                          }} 
+                        />
                       ) : (
                         <ChatMessage message={msg} />
                       ))}

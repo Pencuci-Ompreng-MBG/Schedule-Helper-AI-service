@@ -144,6 +144,12 @@ export function useChat(userEmail?: string) {
         if (hitl?.hitl_payload) {
           setHitlPayload(hitl.hitl_payload);
         }
+        if (hitl?.next_node && hitl.next_node.length > 0) {
+          const nodeName = hitl.next_node[0];
+          if (nodeName !== "__interrupt__") {
+            setCurrentAgentStep(nodeName);
+          }
+        }
 
         if (Array.isArray(messages)) {
           const formattedMessages: Message[] = messages
@@ -237,10 +243,18 @@ export function useChat(userEmail?: string) {
         if (execMatch) {
           try {
             const execData = JSON.parse(execMatch[1]) as ExecutionComplete;
+            if (execData.next_node && execData.next_node.length > 0) {
+              const nodeName = execData.next_node[0];
+              if (nodeName !== "__interrupt__") {
+                setCurrentAgentStep(nodeName);
+              }
+            }
             if (execData.status === "waiting_hitl" && execData.hitl_payload) {
               setHitlPayload(execData.hitl_payload);
               if (execData.hitl_payload.message) {
-                replacementText = execData.hitl_payload.message;
+                if (!accumulated.includes(execData.hitl_payload.message)) {
+                  replacementText = execData.hitl_payload.message;
+                }
               }
             } else if (execData.status === "done") {
               setIsSchedulingDone(true);
@@ -288,13 +302,21 @@ export function useChat(userEmail?: string) {
         return replacementText;
       });
 
-      // 2. Fallback: Parsing teks EXECUTION_COMPLETE yang bocor dari backend (tanpa \x00)
       combined = combined.replace(LEAKED_EXEC_PATTERN, (match, jsonString) => {
         try {
           const execData = JSON.parse(jsonString) as ExecutionComplete;
+          if (execData.next_node && execData.next_node.length > 0) {
+            const nodeName = execData.next_node[0];
+            if (nodeName !== "__interrupt__") {
+              setCurrentAgentStep(nodeName);
+            }
+          }
           if (execData.status === "waiting_hitl" && execData.hitl_payload) {
             setHitlPayload(execData.hitl_payload);
 
+            if (execData.hitl_payload.message && accumulated.includes(execData.hitl_payload.message)) {
+              return "";
+            }
             return execData.hitl_payload.message || "";
           } else {
             setHitlPayload(null);

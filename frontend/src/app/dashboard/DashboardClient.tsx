@@ -139,7 +139,9 @@ export default function DashboardClient() {
   ) => {
     const isApprove =
       resumeData && "approved" in resumeData && resumeData.approved === true;
-    if (isApprove) {
+    const isTaskReviewApprove = isApprove && hitlPayload?.type === "task_review";
+
+    if (isTaskReviewApprove) {
       setIsSubmittingToCalendar(true);
     }
 
@@ -148,7 +150,7 @@ export default function DashboardClient() {
     } catch (error) {
       console.error("Gagal memproses pengiriman:", error);
     } finally {
-      if (isApprove) {
+      if (isTaskReviewApprove) {
         setIsSubmittingToCalendar(false);
       }
     }
