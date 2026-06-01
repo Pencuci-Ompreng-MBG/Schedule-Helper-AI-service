@@ -160,6 +160,7 @@ export function useChat(userEmail?: string) {
             }));
 
           setMessages(formattedMessages);
+          setIsStarted(true); // <-- BARU: Langsung bypass tampilan awal chat
 
           sessionStorage.setItem(
             "chat_messages",
@@ -172,7 +173,7 @@ export function useChat(userEmail?: string) {
     };
 
     loadThread();
-  }, []);
+  }, [searchParams]);
 
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
