@@ -27,7 +27,8 @@ export const setAuthCookieToken = (token: string) => {
   if (!isBrowser()) return;
 
   const secureFlag = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; SameSite=Lax${secureFlag}`;
+  const maxAge = 7 * 24 * 60 * 60; // 7 days
+  document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`;
 };
 
 export const clearAuthCookieToken = () => {
