@@ -10,7 +10,7 @@ import { type ResumeData, useChat } from "@/hooks/useChat";
 import { useSchedule } from "@/hooks/useSchedule";
 import { useUser } from "@/hooks/useUser";
 import { CreateCalendarPayload, type QuestionnairePayload } from "@/types";
-import { API_URL, getAppToken } from "@/utils/const";
+import { API_URL } from "@/utils/const";
 
 const formatTimeRange = (startTime: string, durationMinutes: number) => {
   let hours: number | null = null;

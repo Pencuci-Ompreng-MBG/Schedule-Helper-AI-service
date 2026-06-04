@@ -1,158 +1,78 @@
 "use client";
 
-import {
-  AlertCircle,
-  CalendarDays,
-  Calendar as CalendarIcon,
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  ExternalLink,
-  Info,
-  RotateCw,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, ExternalLink, Info, RotateCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CalendarTaskList } from "@/components/dashboard/calendar/CalendarTaskList";
+import { useCalendarTasks } from "@/hooks/useCalendarTasks";
 import { useUser } from "@/hooks/useUser";
-import { scheduleService } from "@/services/scheduleService";
-import type { CalendarTask } from "@/types";
 
 /**
  * CALENDAR PAGE
- * Menampilkan split view: Daftar jadwal AI di sebelah kiri
- * dan embed Google Calendar di sebelah kanan beserta tombol sinkronisasi.
+ * Menampilkan split view: daftar jadwal AI di sebelah kiri dan embed Google Calendar di sebelah kanan.
  */
 export default function CalendarPage() {
-  const { user, isUserLoading } = useUser();
-  const [tasks, setTasks] = useState<CalendarTask[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [syncSuccess, setSyncSuccess] = useState(false);
-  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(
-    {},
-  );
-  // Simpan status subtask di lokal (karena di DB hanya berupa array of strings)
-  const [subtaskStatus, setSubtaskStatus] = useState<Record<string, boolean>>({});
-  // Status loading individu per tugas saat dicentang
-  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
-  const [iframeKey, setIframeKey] = useState(0);
+  const { user } = useUser();
+  const {
+    tasks,
+    categories,
+    selectedCategory,
+    setSelectedCategory,
+    completionFilter,
+    setCompletionFilter,
+    searchInput,
+    setSearchInput,
+    isLoading,
+    isLoadingMore,
+    isCategoriesLoading,
+    isSyncing,
+    syncSuccess,
+    error,
+    totalCount,
+    loadMoreRef,
+    handleSync,
+    handleToggleMainTask,
+    updatingTaskId,
+    refreshTasks,
+  } = useCalendarTasks();
 
-  // Load awal data tugas/jadwal
-  const loadData = async (showLoading = true) => {
-    if (showLoading) setIsLoading(true);
-    setError(null);
-    try {
-      const data = await scheduleService.getCalendarTasks();
-      setTasks(data);
-    } catch (e) {
-      console.error("Gagal memuat jadwal kalender:", e);
-      setError(
-        "Gagal memuat jadwal kalender. Pastikan koneksi dan token aktif.",
-      );
-    } finally {
-      if (showLoading) setIsLoading(false);
-    }
-  };
+  const [iframeKey, setIframeKey] = useState(0);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframeTimeout, setIframeTimeout] = useState(false);
+  const loadTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    loadData();
+    setIframeLoaded(false);
+    setIframeTimeout(false);
+
+    if (loadTimer.current) {
+      window.clearTimeout(loadTimer.current);
+      loadTimer.current = null;
+    }
+
+    loadTimer.current = window.setTimeout(() => {
+      if (!iframeLoaded) {
+        setIframeTimeout(true);
+      }
+    }, 5000);
+
+    return () => {
+      if (loadTimer.current) {
+        window.clearTimeout(loadTimer.current);
+        loadTimer.current = null;
+      }
+    };
   }, []);
 
-  // Pemicu tombol Sync
-  const handleSync = async () => {
-    setIsSyncing(true);
-    setError(null);
-    try {
-      // Sync memicu sinkronisasi Google Calendar & Google Tasks di backend,
-      // lalu mengembalikan daftar tugas terbaru yang tersimpan.
-      const data = await scheduleService.getCalendarTasks();
-      setTasks(data);
-      setSyncSuccess(true);
-      // Force reload Google Calendar iframe
-      setIframeKey((prev) => prev + 1);
-      setTimeout(() => setSyncSuccess(false), 3000);
-    } catch (e) {
-      console.error("Gagal sinkronisasi kalender:", e);
-      setError(
-        "Gagal sinkronisasi dengan Google Calendar. Cek izin koneksi di backend.",
-      );
-    } finally {
-      setIsSyncing(false);
-    }
+  const userEmail = user?.email;
+  const calendarIframeUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(userEmail ?? "")}&ctz=Asia%2FJakarta&mode=MONTH`;
+
+  const handleReloadIframe = () => {
+    setIframeKey((current) => current + 1);
+    setIframeTimeout(false);
   };
-
-  const toggleTaskExpand = (taskId: string) => {
-    setExpandedTasks((prev) => ({
-      ...prev,
-      [taskId]: !prev[taskId],
-    }));
-  };
-
-  const handleToggleMainTask = async (taskId: string, currentStatus: string) => {
-    if (updatingTaskId) return;
-    const newStatus = currentStatus === "completed" ? "scheduled" : "completed";
-    setUpdatingTaskId(taskId);
-    try {
-      await scheduleService.updateCalendarTask(taskId, { status: newStatus });
-      // Update local state
-      setTasks((prev) => 
-        prev ? prev.map((t) => t.id === taskId ? { ...t, status: newStatus } : t) : null
-      );
-    } catch (e) {
-      console.error("Gagal mengubah status tugas:", e);
-    } finally {
-      setUpdatingTaskId(null);
-    }
-  };
-
-  const handleToggleSubtask = (taskId: string, index: number) => {
-    const key = `${taskId}-${index}`;
-    setSubtaskStatus((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
-  // Format tanggal display (misal: "Selasa, 26 Mei 2026")
-  const formatTaskDate = (dateStr?: string | null) => {
-    if (!dateStr) return "Waktu belum diatur";
-    return new Date(dateStr).toLocaleDateString("id-ID", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
-
-  // Format jam display (misal: "19:00 - 20:00")
-  const formatTaskTime = (dateStr?: string | null, minutes?: number | null) => {
-    if (!dateStr) return "";
-    const startDate = new Date(dateStr);
-    const startHour = startDate.toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    if (minutes) {
-      const endDate = new Date(startDate.getTime() + minutes * 60000);
-      const endHour = endDate.toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      return `${startHour} - ${endHour}`;
-    }
-    return startHour;
-  };
-
-  // Google Calendar Iframe Source
-  const userEmail = user?.email || "dipson@gmail.com";
-  const calendarIframeUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(userEmail)}&ctz=Asia%2FJakarta&mode=MONTH`;
 
   return (
     <main className="flex-1 flex flex-col h-full bg-[#FFFFFF] overflow-y-auto">
-      {/* Header Halaman */}
       <div className="px-8 pt-10 pb-6 shrink-0">
         <h1 className="text-[26px] font-semibold text-[#0A0A0A] mb-1">
           Calendar Schedule History
@@ -162,239 +82,31 @@ export default function CalendarPage() {
         </p>
       </div>
 
-      <div className="flex-1 px-8 pb-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full max-w-[1500px]">
-          {/* BAGIAN KIRI: Schedule List (5/12 cols) */}
-          <div className="lg:col-span-5 flex flex-col h-full">
-            <h2 className="text-[18px] font-semibold text-[#0A0A0A] mb-4 flex items-center gap-2">
-              <CalendarDays className="w-5 h-5 text-[#8A38F5]" />
-              AI Scheduled Tasks ({tasks?.length || 0})
-            </h2>
+      <div className="flex-1 px-8 pb-10 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full w-full">
+          <CalendarTaskList
+            tasks={tasks}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            completionFilter={completionFilter}
+            searchInput={searchInput}
+            totalCount={totalCount}
+            isLoading={isLoading}
+            isLoadingMore={isLoadingMore}
+            isCategoriesLoading={isCategoriesLoading}
+            error={error}
+            hasMore={loadMoreRef ? true : false}
+            onCategoryChange={setSelectedCategory}
+            onCompletionChange={setCompletionFilter}
+            onSearchChange={setSearchInput}
+            onRetry={refreshTasks}
+            onToggleMainTask={handleToggleMainTask}
+            updatingTaskId={updatingTaskId}
+            loadMoreRef={loadMoreRef}
+          />
 
-            {/* Area List Scrollable */}
-            <div className="flex-1 overflow-y-auto pr-2 space-y-4 max-h-[700px] min-h-[400px]">
-              {isLoading ? (
-                // Skeleton Loader
-                <>
-                  {[1, 2, 3].map((skeleton) => (
-                    <div
-                      key={skeleton}
-                      className="w-full bg-white border border-[#F3F4F6] rounded-[20px] p-6 animate-pulse flex flex-col gap-3 shadow-sm"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="h-5 bg-gray-200 rounded w-2/3"></div>
-                        <div className="h-5 bg-gray-200 rounded-full w-16"></div>
-                      </div>
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/3 mt-2"></div>
-                    </div>
-                  ))}
-                </>
-              ) : error ? (
-                // Error State
-                <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-red-200 rounded-[20px] bg-red-50/50">
-                  <AlertCircle className="w-10 h-10 text-red-500 mb-3" />
-                  <p className="text-[14px] text-red-600 font-medium mb-3">
-                    {error}
-                  </p>
-                  <button
-                    onClick={() => loadData(true)}
-                    className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl text-xs font-semibold transition-colors"
-                  >
-                    Coba Lagi
-                  </button>
-                </div>
-              ) : tasks?.length === 0 ? (
-                // Empty State
-                <div className="flex flex-col items-center justify-center text-center py-20 px-8 border border-dashed border-gray-200 rounded-[24px] bg-gray-50/50">
-                  <CalendarDays className="w-12 h-12 text-gray-300 mb-4" />
-                  <h3 className="text-[16px] font-semibold text-gray-700 mb-1">
-                    Belum Ada Jadwal
-                  </h3>
-                  <p className="text-[14px] text-[#717182] max-w-sm">
-                    Buat jadwal harianmu lewat dashboard AI chat dan setujui
-                    untuk mensinkronisasikannya ke kalender.
-                  </p>
-                </div>
-              ) : (
-                // Task Cards
-                tasks?.map((task) => {
-                  const isExpanded = !!expandedTasks[task.id];
-                  return (
-                    <div
-                      key={task.id}
-                      className="bg-white border border-[#F3F4F6] rounded-[24px] p-6 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300"
-                    >
-                      {/* Top Header Card */}
-                      <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
-                          {task.category || "Task"}
-                        </span>
-
-                        <div className="flex gap-1.5 items-center">
-                          {/* Priority Badge */}
-                          <span
-                            className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
-                              task.priority === 1
-                                ? "bg-red-50 text-red-600 border-red-100"
-                                : task.priority === 2
-                                  ? "bg-orange-50 text-orange-600 border-orange-100"
-                                  : "bg-green-50 text-green-600 border-green-100"
-                            }`}
-                          >
-                            {task.priority === 1
-                              ? "Urgent"
-                              : task.priority === 2
-                                ? "Medium"
-                                : "Low"}
-                          </span>
-
-                          {/* Status Badge */}
-                          <span
-                            className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
-                              task.status === "scheduled"
-                                ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                                : task.status === "completed"
-                                  ? "bg-blue-50 text-blue-600 border-blue-100"
-                                  : "bg-amber-50 text-amber-600 border-amber-100"
-                            }`}
-                          >
-                            {task.status}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Title & Checkbox */}
-                      <div className="flex items-start gap-3 mb-1.5">
-                        <button
-                          onClick={() => handleToggleMainTask(task.id, task.status)}
-                          disabled={updatingTaskId === task.id}
-                          className={`mt-0.5 shrink-0 w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
-                            task.status === "completed"
-                              ? "bg-emerald-500 border-emerald-500 text-white"
-                              : "border-gray-300 hover:border-emerald-500 text-transparent hover:text-emerald-500"
-                          } ${updatingTaskId === task.id ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                        >
-                          {updatingTaskId === task.id ? (
-                            <RotateCw className="w-3.5 h-3.5 animate-spin text-gray-400" />
-                          ) : (
-                            <Check className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                        <h3 className={`text-[17px] font-bold leading-snug transition-colors ${
-                          task.status === "completed" ? "text-gray-400 line-through" : "text-[#0A0A0A]"
-                        }`}>
-                          {task.title}
-                        </h3>
-                      </div>
-                      {task.description && (
-                        <p className="text-[13px] text-gray-500 line-clamp-2 mb-3 leading-relaxed">
-                          {task.description}
-                        </p>
-                      )}
-
-                      {/* Time Detail */}
-                      <div className="flex flex-col gap-1.5 text-[13px] text-[#555566] border-t border-b border-[#F9FAFB] py-3 mb-3">
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="w-4 h-4 text-gray-400" />
-                          <span>{formatTaskDate(task.startTime)}</span>
-                        </div>
-                        {task.startTime && (
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <span className="font-semibold text-slate-800">
-                              {formatTaskTime(
-                                task.startTime,
-                                task.estimatedMinutes,
-                              )}
-                            </span>
-                            {task.estimatedMinutes && (
-                              <span className="text-gray-400">
-                                ({task.estimatedMinutes} mins)
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Google integrations status */}
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {task.googleEventId && (
-                          <div className="bg-blue-50 text-blue-700 border border-blue-100 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-                            Google Calendar Synced
-                          </div>
-                        )}
-                        {task.googleTaskId && (
-                          <div className="bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                            Google Tasks Synced
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Subtasks Accordion Toggle */}
-                      {task.subtasks && task.subtasks.length > 0 && (
-                        <div>
-                          <button
-                            onClick={() => toggleTaskExpand(task.id)}
-                            className="flex items-center justify-between w-full text-left text-xs font-semibold text-[#8A38F5] hover:text-[#7021dc] transition-colors mt-2"
-                          >
-                            <span>
-                              {isExpanded
-                                ? "Hide Subtasks"
-                                : `Show Subtasks (${task.subtasks.length})`}
-                            </span>
-                            {isExpanded ? (
-                              <ChevronUp className="w-4 h-4" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )}
-                          </button>
-
-                          {isExpanded && (
-                            <div className="mt-3 pl-2 border-l-2 border-gray-100 space-y-2 animate-fadeIn">
-                              {task.subtasks.map((sub, idx) => {
-                                const isSubCompleted = !!subtaskStatus[`${task.id}-${idx}`];
-                                return (
-                                  <div
-                                    key={idx}
-                                    className="flex items-start gap-2.5 group"
-                                  >
-                                    <button
-                                      onClick={() => handleToggleSubtask(task.id, idx)}
-                                      className={`mt-0.5 shrink-0 w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors cursor-pointer ${
-                                        isSubCompleted
-                                          ? "bg-emerald-500 border-emerald-500 text-white"
-                                          : "border-gray-300 group-hover:border-emerald-500 text-transparent group-hover:text-emerald-500"
-                                      }`}
-                                    >
-                                      <Check className="w-3 h-3" />
-                                    </button>
-                                    <span className={`text-[13px] leading-normal transition-colors cursor-pointer select-none ${
-                                      isSubCompleted ? "text-gray-400 line-through" : "text-slate-700"
-                                    }`}
-                                    onClick={() => handleToggleSubtask(task.id, idx)}>
-                                      {sub}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* BAGIAN KANAN: Google Calendar Embed & Sync (7/12 cols) */}
           <div className="lg:col-span-7 flex flex-col h-full">
-            <div className="bg-white border border-[#F3F4F6] rounded-[24px] p-6 shadow-sm flex flex-col h-full gap-5">
-              {/* Box Header */}
+            <div className="bg-white border border-[#F3F4F6] rounded-3xl p-6 shadow-sm flex flex-col h-full gap-5">
               <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                 <div>
                   <h2 className="text-[18px] font-bold text-[#0A0A0A]">
@@ -405,7 +117,6 @@ export default function CalendarPage() {
                   </p>
                 </div>
 
-                {/* External link to Google Calendar */}
                 <a
                   href="https://calendar.google.com"
                   target="_blank"
@@ -417,9 +128,7 @@ export default function CalendarPage() {
                 </a>
               </div>
 
-              {/* IFrame Google Calendar */}
-              <div className="relative flex-1 bg-gray-50 border border-gray-100 rounded-[20px] overflow-hidden min-h-[500px] shadow-inner">
-                {/* Loader Overlay when Syncing */}
+              <div className="relative flex-1 bg-gray-50 border border-gray-100 rounded-[20px] overflow-hidden min-h-125 shadow-inner">
                 {isSyncing && (
                   <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3">
                     <RotateCw className="w-10 h-10 text-[#8A38F5] animate-spin" />
@@ -436,26 +145,65 @@ export default function CalendarPage() {
                   className="w-full h-full"
                   frameBorder="0"
                   scrolling="no"
-                ></iframe>
+                  onLoad={() => {
+                    setIframeLoaded(true);
+                    setIframeTimeout(false);
+
+                    if (loadTimer.current) {
+                      window.clearTimeout(loadTimer.current);
+                      loadTimer.current = null;
+                    }
+                  }}
+                />
+
+                {iframeTimeout && (
+                  <div className="absolute inset-0 z-20 bg-white/90 flex flex-col items-center justify-center gap-4 p-6 text-center">
+                    <div className="text-lg font-semibold text-[#0A0A0A]">
+                      Tidak dapat memuat Google Calendar
+                    </div>
+                    <p className="text-sm text-[#717182] max-w-md">
+                      Google Calendar tidak tampil karena Anda belum login ke akun Google di browser ini, kalender bersifat privat, atau browser memblokir cookie lintas-site.
+                    </p>
+                    <div className="flex flex-wrap gap-3 justify-center">
+                      <button
+                        onClick={() => window.open(calendarIframeUrl, "_blank")}
+                        className="px-4 py-2 bg-white border rounded-xl text-sm font-semibold hover:bg-gray-50"
+                      >
+                        Buka di Tab Baru
+                      </button>
+                      <button
+                        onClick={() => {
+                          const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api").replace(/\/api$/, "");
+                          window.location.href = `${apiBase}/auth/google`;
+                        }}
+                        className="px-4 py-2 bg-[#8A38F5] text-white rounded-xl text-sm font-semibold hover:bg-[#7021dc]"
+                      >
+                        Login dengan Google
+                      </button>
+                      <button
+                        onClick={handleReloadIframe}
+                        className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-semibold hover:bg-gray-200"
+                      >
+                        Coba Ulang
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Google Integration Help Text */}
               <div className="p-4 bg-[#F9FAFB] rounded-2xl border border-gray-100 flex items-start gap-3">
                 <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-[#717182] leading-relaxed">
-                  <strong>Penting:</strong> Pastikan Anda telah login ke akun
-                  Google (<strong>{userEmail}</strong>) di browser ini agar
-                  Google Calendar dapat ter-render dengan benar. Apabila
-                  kalender tidak muncul, silakan klik tombol{" "}
-                  <em>Buka Google Calendar</em> di atas untuk melakukan
-                  otentikasi.
+                  <strong>Penting:</strong> Pastikan Anda telah login ke akun Google (<strong>{userEmail}</strong>) di browser ini agar Google Calendar dapat ter-render dengan benar. Apabila kalender tidak muncul, silakan klik tombol <em>Buka Google Calendar</em> di atas untuk melakukan otentikasi.
                 </p>
               </div>
 
-              {/* Action Sync Button */}
               <div className="pt-2 flex justify-center">
                 <button
-                  onClick={handleSync}
+                  onClick={async () => {
+                    await handleSync();
+                    setIframeKey((current) => current + 1);
+                  }}
                   disabled={isSyncing}
                   className={`w-full max-w-md py-4 px-6 rounded-2xl font-semibold text-white shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 active:scale-95 ${
                     isSyncing

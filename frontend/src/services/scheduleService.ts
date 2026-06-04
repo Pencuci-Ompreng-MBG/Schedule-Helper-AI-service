@@ -1,10 +1,13 @@
 import type {
   CalendarTask,
+  CalendarTaskListResponse,
+  CalendarTaskQuery,
   HistoryItem,
   QuestionnairePayload,
   ScheduleItem,
 } from "@/types";
-import { API_URL, getAppToken } from "@/utils/const";
+import { API_URL } from "@/utils/const";
+import { apiFetch } from "@/lib/apiFetch";
 
 // =============================================================
 // SCHEDULE SERVICE: Mengelola pembuatan jadwal dan riwayat
@@ -57,7 +60,7 @@ function mapSessionToHistoryItem(session: BackendSession): HistoryItem {
     : (session.latestIntent ?? "Untitled Session");
 
   const title =
-    extracted.length > 80 ? extracted.slice(0, 77) + "..." : extracted;
+    extracted.length > 80 ? `${extracted.slice(0, 77)}...` : extracted;
 
   // Format tanggal: "26 May 2026, 16:49"
   const date = new Date(session.updatedAt).toLocaleString("id-ID", {
@@ -85,6 +88,32 @@ function mapSessionToHistoryItem(session: BackendSession): HistoryItem {
 }
 
 export const scheduleService = {
+  buildCalendarQueryString(params?: CalendarTaskQuery) {
+    const searchParams = new URLSearchParams();
+
+    if (params?.category && params.category !== "all") {
+      searchParams.set("category", params.category);
+    }
+
+    if (params?.completion && params.completion !== "all") {
+      searchParams.set("completion", params.completion);
+    }
+
+    if (params?.search?.trim()) {
+      searchParams.set("search", params.search.trim());
+    }
+
+    if (params?.page) {
+      searchParams.set("page", String(params.page));
+    }
+
+    if (params?.limit) {
+      searchParams.set("limit", String(params.limit));
+    }
+
+    return searchParams.toString();
+  },
+
   /**
    * Mengirim data kuesioner ke AI untuk menghasilkan jadwal baru.
    * (Belum terintegrasi — masih simulasi)
@@ -99,7 +128,7 @@ export const scheduleService = {
     console.log("Generating schedule with payload:", payload);
     await new Promise((resolve) => setTimeout(resolve, 3000));
     return {
-      scheduleId: "new-schedule-id-" + Date.now(),
+      scheduleId: `new-schedule-id-${Date.now()}`,
       topPriorities: [],
       quickWins: [],
       timeline: [],
@@ -112,18 +141,9 @@ export const scheduleService = {
    * Terintegrasi dengan GET /api/agent
    */
   async getHistory(): Promise<HistoryItem[]> {
-    const token = getAppToken();
-
-    if (!token) {
-      console.warn("[scheduleService.getHistory] No auth token found.");
-      return [];
-    }
-
-    const response = await fetch(`${API_URL}/agent`, {
+    const response = await apiFetch(`${API_URL}/agent`, {
       method: "GET",
-      credentials: "include",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -144,18 +164,9 @@ export const scheduleService = {
    * Terintegrasi dengan GET /api/agent/:thread_id
    */
   async getScheduleById(id: string): Promise<any> {
-    const token = getAppToken();
-
-    if (!token) {
-      console.warn("[scheduleService.getScheduleById] No auth token found.");
-      return null;
-    }
-
-    const response = await fetch(`${API_URL}/agent/${id}`, {
+    const response = await apiFetch(`${API_URL}/agent/${id}`, {
       method: "GET",
-      credentials: "include",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -174,22 +185,17 @@ export const scheduleService = {
    * Mengambil daftar tugas/jadwal yang terintegrasi dengan kalender.
    * Terintegrasi dengan GET /api/calendar
    */
-  async getCalendarTasks(): Promise<CalendarTask[]> {
-    const token = getAppToken();
-
-    if (!token) {
-      console.warn("[scheduleService.getCalendarTasks] No auth token found.");
-      return [];
-    }
-
-    const response = await fetch(`${API_URL}/calendar`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+  async getCalendarTasks(params?: CalendarTaskQuery): Promise<CalendarTaskListResponse> {
+    const queryString = scheduleService.buildCalendarQueryString(params);
+    const response = await apiFetch(
+      `${API_URL}/calendar${queryString ? `?${queryString}` : ""}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       console.error(
@@ -204,22 +210,65 @@ export const scheduleService = {
   },
 
   /**
+   * Mengambil daftar kategori yang tersedia di kalender.
+   * Terintegrasi dengan GET /api/calendar/categories
+   */
+  async getCalendarCategories(): Promise<string[]> {
+    const response = await apiFetch(`${API_URL}/calendar/categories`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error(
+        `[scheduleService.getCalendarCategories] Failed: ${response.status} ${response.statusText}`,
+      );
+      throw new Error(
+        `Gagal mengambil kategori kalender: ${response.statusText}`,
+      );
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Memicu sinkronisasi manual lalu mengambil ulang data kalender.
+   * Terintegrasi dengan POST /api/calendar/sync
+   */
+  async syncCalendarTasks(params?: CalendarTaskQuery): Promise<CalendarTaskListResponse> {
+    const queryString = scheduleService.buildCalendarQueryString(params);
+    const response = await apiFetch(
+      `${API_URL}/calendar/sync${queryString ? `?${queryString}` : ""}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      console.error(
+        `[scheduleService.syncCalendarTasks] Failed: ${response.status} ${response.statusText}`,
+      );
+      throw new Error(
+        `Gagal sinkronisasi data kalender: ${response.statusText}`,
+      );
+    }
+
+    return response.json();
+  },
+
+  /**
    * Memperbarui tugas kalender (contoh: mengubah status menjadi completed).
    * Terintegrasi dengan PATCH /api/calendar/:id
    */
   async updateCalendarTask(id: string, payload: any): Promise<any> {
-    const token = getAppToken();
-
-    if (!token) {
-      console.warn("[scheduleService.updateCalendarTask] No auth token found.");
-      return null;
-    }
-
-    const response = await fetch(`${API_URL}/calendar/${id}`, {
+    const response = await apiFetch(`${API_URL}/calendar/${id}`, {
       method: "PATCH",
-      credentials: "include",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),

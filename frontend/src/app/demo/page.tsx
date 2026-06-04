@@ -8,6 +8,7 @@ import { ChatState } from "@/components/dashboard/ChatState";
 import { StartState } from "@/components/dashboard/StartState";
 import { SubmittingState } from "@/components/dashboard/SubmittingState";
 import { SuccessState } from "@/components/dashboard/SuccessState";
+import { getAuthCookieToken } from "@/lib/auth";
 import { useDemoChat } from "@/hooks/useDemoChat";
 import { useSchedule } from "@/hooks/useSchedule";
 import { authService } from "@/services/authService";
@@ -57,7 +58,7 @@ function DemoClient() {
   // Inisialisasi Demo User secara otomatis di latar belakang
   useEffect(() => {
     const initDemoUser = async () => {
-      const token = sessionStorage.getItem("app_token");
+      const token = getAuthCookieToken();
       if (token) {
         setDemoUserLoading(false);
         return;

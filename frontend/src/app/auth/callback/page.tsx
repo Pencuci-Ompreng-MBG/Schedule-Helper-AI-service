@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
+import { clearConversationStorage, setAuthCookieToken } from "@/lib/auth";
 import { authService } from "@/services/authService";
 
 function CallbackHandler() {
@@ -15,9 +16,8 @@ function CallbackHandler() {
     const processLogin = async () => {
       if (token) {
         try {
-          sessionStorage.removeItem("chat_messages");
-          sessionStorage.removeItem("raw_tasks");
-          sessionStorage.setItem("app_token", token);
+          clearConversationStorage();
+          setAuthCookieToken(token);
 
           await authService.getCurrentUser();
 

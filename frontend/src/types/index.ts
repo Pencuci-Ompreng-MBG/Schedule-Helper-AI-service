@@ -92,3 +92,23 @@ export interface CalendarTask {
   createdAt: string;
   updatedAt: string;
 }
+
+export type CalendarCompletionFilter = "all" | "completed" | "open";
+
+export interface CalendarTaskQuery {
+  category?: string;
+  completion?: CalendarCompletionFilter;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CalendarTaskListResponse {
+  items: CalendarTask[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+  };
+}

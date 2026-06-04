@@ -7,6 +7,8 @@ import {
   Min,
   IsDateString,
   IsArray,
+  IsIn,
+  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -112,4 +114,37 @@ export class UpdateCalendarDto {
   @IsString({ each: true })
   @IsOptional()
   subtasks?: string[];
+}
+
+export class CalendarListQueryDto {
+  @ApiPropertyOptional({ example: 'serius' })
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @ApiPropertyOptional({ example: 'completed', enum: ['all', 'completed', 'open'] })
+  @IsString()
+  @IsIn(['all', 'completed', 'open'])
+  @IsOptional()
+  completion?: 'all' | 'completed' | 'open';
+
+  @ApiPropertyOptional({ example: 'meeting' })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  page?: number;
+
+  @ApiPropertyOptional({ example: 10 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  @IsOptional()
+  limit?: number;
 }

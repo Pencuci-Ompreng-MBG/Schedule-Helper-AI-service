@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { getStoredUser } from "@/lib/auth";
 import { authService } from "@/services/authService";
 import type { UserProfile } from "@/types";
 
@@ -28,9 +29,9 @@ export function useUser() {
   // Fungsi untuk update state tanpa panggil API (Mencegah Infinite Loop)
   const syncUserFromStorage = useCallback(() => {
     try {
-      const storedUser = sessionStorage.getItem("app_user");
+      const storedUser = getStoredUser();
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        setUser(storedUser);
       } else {
         setUser(null);
       }

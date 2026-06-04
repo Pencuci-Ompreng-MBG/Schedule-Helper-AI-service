@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { AUTH_COOKIE_NAME } from "@/lib/auth";
 
 type IncomingMessage = {
   role?: string;
@@ -140,11 +141,15 @@ export async function POST(req: NextRequest) {
   const payload = buildBackendPayload(body);
 
   const authHeader = req.headers.get("Authorization");
+  const cookieToken = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+  if (cookieToken) {
+    headers.Cookie = `${AUTH_COOKIE_NAME}=${cookieToken}`;
+  }
   if (authHeader) {
-    headers["Authorization"] = authHeader;
+    headers.Authorization = authHeader;
   }
 
   const response = await fetch(

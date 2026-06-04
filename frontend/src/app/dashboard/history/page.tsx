@@ -43,7 +43,7 @@ export default function HistoryPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-8 pb-10">
-        <div className="max-w-4xl flex flex-col gap-4">
+        <div className="w-full flex flex-col gap-4">
           {/* Skeleton Loader */}
           {isLoading && (
             <>

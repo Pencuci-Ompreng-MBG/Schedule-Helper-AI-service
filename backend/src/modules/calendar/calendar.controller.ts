@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -13,9 +14,14 @@ import {
   ApiOperation,
   ApiTags,
   ApiResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { CalendarService } from './calendar.service.js';
-import { CreateCalendarDto, UpdateCalendarDto } from './dto/calendar.dto.js';
+import {
+  CalendarListQueryDto,
+  CreateCalendarDto,
+  UpdateCalendarDto,
+} from './dto/calendar.dto.js';
 import { JwtGuard } from '../auth/guard/jwt.guard.js';
 import { GetUser } from '../auth/decorator/get-user.decorator.js';
 
@@ -32,11 +38,40 @@ export class CalendarController {
    */
   @Get()
   @ApiOperation({
-    summary: 'Synchronize / Pull all calendar schedules for the current user',
+    summary: 'Pull calendar schedules for the current user',
   })
   @ApiResponse({ status: 200, description: 'Return all schedules' })
-  findAll(@GetUser('id') userId: string) {
-    return this.calendarService.findAll(userId);
+  @ApiQuery({ name: 'category', required: false, description: 'Filter by category' })
+  @ApiQuery({ name: 'completion', required: false, description: 'Filter by completion state', enum: ['all', 'completed', 'open'] })
+  @ApiQuery({ name: 'search', required: false, description: 'Search by title, description, category, or raw input' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Page size' })
+  findAll(@GetUser('id') userId: string, @Query() query: CalendarListQueryDto) {
+    return this.calendarService.findAll(userId, query);
+  }
+
+  /**
+   * Endpoint ringan untuk mengambil daftar kategori unik yang tersedia.
+   */
+  @Get('categories')
+  @ApiOperation({ summary: 'Get available task categories' })
+  @ApiResponse({ status: 200, description: 'Return category list' })
+  getCategories(@GetUser('id') userId: string) {
+    return this.calendarService.getCategories(userId);
+  }
+
+  /**
+   * Endpoint untuk sinkronisasi manual ke Google Calendar / Google Tasks.
+   */
+  @Post('sync')
+  @ApiOperation({ summary: 'Sync calendar schedules with Google services' })
+  @ApiQuery({ name: 'category', required: false, description: 'Filter by category after sync' })
+  @ApiQuery({ name: 'completion', required: false, description: 'Filter by completion state after sync', enum: ['all', 'completed', 'open'] })
+  @ApiQuery({ name: 'search', required: false, description: 'Search by title, description, category, or raw input after sync' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number after sync' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Page size after sync' })
+  sync(@GetUser('id') userId: string, @Query() query: CalendarListQueryDto) {
+    return this.calendarService.syncAndFindAll(userId, query);
   }
 
   /**

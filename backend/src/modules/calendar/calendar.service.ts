@@ -3,6 +3,25 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateCalendarDto, UpdateCalendarDto } from './dto/calendar.dto.js';
 import { google } from 'googleapis';
 import { ConfigService } from '@nestjs/config';
+import { Prisma, Task } from '@prisma/client';
+
+type CalendarListQuery = {
+  category?: string;
+  completion?: 'all' | 'completed' | 'open';
+  search?: string;
+  page?: number;
+  limit?: number;
+};
+
+type CalendarTaskListResponse = {
+  items: Task[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+  };
+};
 
 @Injectable()
 export class CalendarService {
@@ -90,7 +109,81 @@ export class CalendarService {
     };
   }
 
-  async findAll(userId: string) {
+  private buildCalendarWhere(
+    userId: string,
+    query: CalendarListQuery,
+  ): Prisma.TaskWhereInput {
+    const where: Prisma.TaskWhereInput = {
+      userId,
+    };
+
+    if (query.category && query.category !== 'all') {
+      where.category = query.category;
+    }
+
+    if (query.completion === 'completed') {
+      where.status = 'completed';
+    } else if (query.completion === 'open') {
+      where.status = { in: ['pending', 'scheduled'] };
+    }
+
+    if (query.search?.trim()) {
+      const search = query.search.trim();
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } },
+        { rawInput: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    return where;
+  }
+
+  async findAll(
+    userId: string,
+    query: CalendarListQuery = {},
+  ): Promise<CalendarTaskListResponse> {
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.min(Math.max(query.limit ?? 10, 1), 50);
+    const skip = (page - 1) * limit;
+    const where = this.buildCalendarWhere(userId, query);
+
+    const [total, items] = await Promise.all([
+      this.prisma.task.count({ where }),
+      this.prisma.task.findMany({
+        where,
+        orderBy: [{ startTime: 'asc' }, { createdAt: 'desc' }],
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page,
+        limit,
+        total,
+        hasMore: skip + items.length < total,
+      },
+    };
+  }
+
+  async getCategories(userId: string) {
+    const categories = await this.prisma.task.findMany({
+      where: { userId },
+      distinct: ['category'],
+      select: { category: true },
+      orderBy: { category: 'asc' },
+    });
+
+    return categories
+      .map((item) => item.category)
+      .filter((category): category is string => Boolean(category));
+  }
+
+  async syncAndFindAll(userId: string, query: CalendarListQuery = {}) {
     const calendar = await this.getGoogleCalendar(userId);
     if (calendar) {
       try {
@@ -110,10 +203,7 @@ export class CalendarService {
       }
     }
 
-    return this.prisma.task.findMany({
-      where: { userId },
-      orderBy: { startTime: 'asc' },
-    });
+    return this.findAll(userId, query);
   }
 
   async findOne(id: string, userId: string) {

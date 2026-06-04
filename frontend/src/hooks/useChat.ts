@@ -8,16 +8,24 @@ import {
   useRef,
   useState,
 } from "react";
+import { apiFetch } from "@/lib/apiFetch";
+import { clearConversationStorage } from "@/lib/auth";
 import type { Message, QuestionnairePayload, RawTasks } from "@/types";
 import { buildUserContent } from "@/utils/chatPayload";
-import { API_URL, getAppToken } from "@/utils/const";
+import { API_URL } from "@/utils/const";
 
-const THREAD_ID_PATTERN = /\x00THREAD_ID:([^\x00]+)\x00/;
-const EXECUTION_COMPLETE_PATTERN = /\x00EXECUTION_COMPLETE:([\s\S]+?)\x00/;
-const AGENT_STEP_PATTERN = /\x00AGENT_STEP:([\s\S]+?)\x00/;
+const THREAD_ID_PATTERN = new RegExp("\\u0000THREAD_ID:([^\\u0000]+)\\u0000");
+const EXECUTION_COMPLETE_PATTERN = new RegExp(
+  "\\u0000EXECUTION_COMPLETE:([\\s\\S]+?)\\u0000",
+);
+const AGENT_STEP_PATTERN = new RegExp(
+  "\\u0000AGENT_STEP:([\\s\\S]+?)\\u0000",
+);
 
-const CONTROL_TOKEN_PATTERN =
-  /\x00(?:THREAD_ID|EXECUTION_COMPLETE|AGENT_STEP):[\s\S]*?\x00/g;
+const CONTROL_TOKEN_PATTERN = new RegExp(
+  "\\u0000(?:THREAD_ID|EXECUTION_COMPLETE|AGENT_STEP):[\\s\\S]*?\\u0000",
+  "g",
+);
 // Fallback pattern jika backend membocorkan JSON ini langsung ke dalam text stream biasa
 // (tanpa event khusus dari route.ts / tanpa prefix \x00)
 const LEAKED_EXEC_PATTERN = /EXECUTION_COMPLETE:(\{[\s\S]*?\})/g;
@@ -113,24 +121,16 @@ export function useChat(userEmail?: string) {
     const current = searchParams.get("thread_id");
 
     if (!current) {
-      sessionStorage.removeItem("chat_messages");
+      clearConversationStorage();
       setMessages([]);
       setIsStarted(false);
       return;
     }
 
     const loadThread = async () => {
-      const token = getAppToken();
-      if (!token) {
-        return;
-      }
-
       try {
-        const response = await fetch(`${API_URL}/agent/${current}`, {
-          credentials: "include",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const response = await apiFetch(`${API_URL}/agent/${current}`, {
+          method: "GET",
         });
 
         if (!response.ok) {
@@ -196,14 +196,10 @@ export function useChat(userEmail?: string) {
 
   /** Core streaming — dipakai handleSend (chat biasa & resume) */
   const stream = async (body: Record<string, unknown>) => {
-    const response = await fetch("/api/chat/stream", {
+    const response = await apiFetch("/api/chat/stream", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization:
-          typeof window !== "undefined" && sessionStorage.getItem("app_token")
-            ? `Bearer ${sessionStorage.getItem("app_token")}`
-            : "",
       },
       body: JSON.stringify(body),
     });
@@ -486,8 +482,7 @@ export function useChat(userEmail?: string) {
   };
 
   const resetChat = () => {
-    sessionStorage.removeItem("chat_messages");
-    sessionStorage.removeItem("raw_tasks");
+    clearConversationStorage();
     setMessages([]);
     setIsStarted(false);
     setHitlPayload(null);
