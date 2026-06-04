@@ -11,6 +11,7 @@ import {
 import { useUser } from "@/hooks/useUser";
 import { chatService } from "@/services/chatService";
 import { removeChatSession } from "@/utils/removeChatMsgs";
+import Image from "next/image";
 
 /**
  * DASHBOARD LAYOUT
@@ -73,13 +74,22 @@ export default function DashboardLayout({
         </button>
         {isSdbrClose ? (
           <div className="flex flex-col bg-gray-50 h-full">
-            <div className="p-6 pb-8 border-b border-gray-100 group-[content]: ">
+            <div className="p-6 pb-8 border-b border-gray-100">
               <Link
                 href="/dashboard"
                 onClick={() => chatService.clearChat()}
-                className="text-[20px] font-bold text-[#0A0A0A] cursor-pointer no-underline block"
+                className="block w-full"
               >
-                Schedule Helper
+                <div className="w-full h-10 relative">
+                  <Image
+                    src="/logo-with-title.svg"
+                    alt="logo with title"
+                    width={200}
+                    height={40}
+                    className="object-contain"
+                    sizes="(max-width: 640px) 120px, 160px"
+                  />
+                </div>
               </Link>
             </div>
             <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -88,7 +98,7 @@ export default function DashboardLayout({
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-colors cursor-pointer ${
                   isDashboardActive
                     ? "bg-[#8A38F5] text-white shadow-sm"
-                    : "text-gray-500 hover:bg-gray-50"
+                    : "text-gray-500 hover:bg-gray-200"
                 }`}
                 onClick={() => {
                   removeChatSession();
@@ -106,7 +116,7 @@ export default function DashboardLayout({
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-colors cursor-pointer ${
                   isHistoryActive
                     ? "bg-[#8A38F5] text-white shadow-sm"
-                    : "text-gray-500 hover:bg-gray-50"
+                    : "text-gray-500 hover:bg-gray-200"
                 }`}
               >
                 <img
@@ -121,7 +131,7 @@ export default function DashboardLayout({
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-colors cursor-pointer ${
                   isCalendarActive
                     ? "bg-[#8A38F5] text-white shadow-sm"
-                    : "text-gray-500 hover:bg-gray-50"
+                    : "text-gray-500 hover:bg-gray-200"
                 }`}
               >
                 <Calendar
@@ -134,7 +144,7 @@ export default function DashboardLayout({
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-colors cursor-pointer ${
                   isProfileActive
                     ? "bg-[#8A38F5] text-white shadow-sm"
-                    : "text-gray-500 hover:bg-gray-50"
+                    : "text-gray-500 hover:bg-gray-200"
                 }`}
               >
                 <img
@@ -149,7 +159,7 @@ export default function DashboardLayout({
             <div className="p-4 border-t border-gray-100 self-end">
               <div
                 onClick={() => router.push("/dashboard/profile")}
-                className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-200 cursor-pointer transition-colors"
               >
                 {isUserLoading || !user ? (
                   <div className="w-10 h-10 bg-[#C2C2C2] rounded-full animate-pulse shrink-0" />
@@ -184,13 +194,22 @@ export default function DashboardLayout({
           </div>
         ) : (
           <div className="flex flex-col bg-gray-50 h-full">
-            <div className="p-6 pb-8 border-b border-gray-100 group-[content]:">
+            <div className="p-6 pb-8 border-b border-gray-100">
               <Link
                 href="/dashboard"
                 onClick={() => chatService.clearChat()}
-                className="text-[20px] font-bold text-[#0A0A0A] cursor-pointer no-underline block"
+                className="block w-full"
               >
-                SH
+                <div className="w-full h-10 relative">
+                  <Image
+                    src="/logo.svg"
+                    alt="logo"
+                    width={200}
+                    height={40}
+                    className="object-contain max-w-full h-10"
+                    sizes="(max-width: 640px) 120px, 160px"
+                  />
+                </div>
               </Link>
             </div>
             <nav className="flex-1 px-2 py-6 space-y-2 overflow-y-auto">
@@ -199,7 +218,7 @@ export default function DashboardLayout({
                 className={`flex items-center justify-center p-3 rounded-xl transition-colors ${
                   isDashboardActive
                     ? "bg-[#8A38F5] shadow-sm"
-                    : "hover:bg-gray-50"
+                    : "hover:bg-gray-200"
                 }`}
                 onClick={() => {
                   removeChatSession();
@@ -218,7 +237,7 @@ export default function DashboardLayout({
                 className={`flex items-center justify-center p-3 rounded-xl transition-colors ${
                   isHistoryActive
                     ? "bg-[#8A38F5] shadow-sm"
-                    : "hover:bg-gray-50"
+                    : "hover:bg-gray-200"
                 }`}
               >
                 <img
@@ -234,7 +253,7 @@ export default function DashboardLayout({
                 className={`flex items-center justify-center p-3 rounded-xl transition-colors ${
                   isCalendarActive
                     ? "bg-[#8A38F5] shadow-sm text-white"
-                    : "hover:bg-gray-50 text-gray-500"
+                    : "hover:bg-gray-200 text-gray-500"
                 }`}
               >
                 <Calendar className="w-5 h-5" />
@@ -244,7 +263,7 @@ export default function DashboardLayout({
                 className={`flex items-center justify-center p-3 rounded-xl transition-colors  ${
                   isProfileActive
                     ? "bg-[#8A38F5] text-white shadow-sm"
-                    : "text-gray-500 hover:bg-gray-50"
+                    : "text-gray-500 hover:bg-gray-200"
                 }`}
               >
                 <img
@@ -257,7 +276,7 @@ export default function DashboardLayout({
             <div className="p-4 border-t border-gray-100 mt-auto">
               <div
                 onClick={() => router.push("/dashboard/profile")}
-                className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-200 cursor-pointer transition-colors"
               >
                 {isUserLoading || !user ? (
                   <div className="w-10 h-10 bg-[#C2C2C2] rounded-full animate-pulse shrink-0" />
