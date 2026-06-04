@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface SliderWithTooltipProps {
   value: number;
@@ -65,6 +65,7 @@ export function QuestionnaireCard({
   setIsDropdownOpen,
   onComplete,
 }: QuestionnaireCardProps) {
+  const [isMounted, setIsMounted] = useState(false);
   const timeOptions = [
     "Less than 2 Hours",
     "2 - 4 Hours",
@@ -72,7 +73,11 @@ export function QuestionnaireCard({
     "More than 6 Hours",
   ];
 
-  // Lihat? State untuk klik slider sudah hilang dari sini, karena sudah diurus di SliderWithTooltip
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const isSubmitDisabled = !isMounted || !availableTime;
 
   return (
     <div className="w-full max-w-2xl bg-white border border-[#E5E7EB] rounded-[20px] p-6 shadow-sm mt-14 animate-in fade-in slide-in-from-bottom-4 duration-500 self-center">
@@ -198,7 +203,7 @@ export function QuestionnaireCard({
 
       <button
         onClick={onComplete}
-        disabled={!availableTime}
+        disabled={isSubmitDisabled}
         className="w-full bg-[#8A38F5] text-white py-4 rounded-xl font-semibold text-[15px] font-inter shadow-md hover:bg-[#7b32db] disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
       >
         Submit
