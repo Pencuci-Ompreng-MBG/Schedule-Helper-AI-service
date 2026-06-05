@@ -28,24 +28,6 @@ export function HistoryCard({ item }: HistoryCardProps) {
           />
           <span>{item.date}</span>
         </div>
-        <div className="flex items-center gap-6 mt-1.5 text-[14px] text-[#717182]">
-          <div className="flex items-center gap-2">
-            <img
-              src="/images-history/Priorities.webp"
-              alt="Priorities"
-              className="w-[18px] h-[18px] object-contain"
-            />
-            <span>{item.priorities} priorities</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <img
-              src="/images-history/Quick%20Wins.webp"
-              alt="Quick Wins"
-              className="w-[18px] h-[18px] object-contain"
-            />
-            <span>{item.quickWins} quick wins</span>
-          </div>
-        </div>
       </div>
     </Link>
   );

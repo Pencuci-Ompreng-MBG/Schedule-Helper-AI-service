@@ -41,9 +41,22 @@ export class CalendarController {
     summary: 'Pull calendar schedules for the current user',
   })
   @ApiResponse({ status: 200, description: 'Return all schedules' })
-  @ApiQuery({ name: 'category', required: false, description: 'Filter by category' })
-  @ApiQuery({ name: 'completion', required: false, description: 'Filter by completion state', enum: ['all', 'completed', 'open'] })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by title, description, category, or raw input' })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    description: 'Filter by category',
+  })
+  @ApiQuery({
+    name: 'completion',
+    required: false,
+    description: 'Filter by completion state',
+    enum: ['all', 'completed', 'open'],
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by title, description, category, or raw input',
+  })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Page size' })
   findAll(@GetUser('id') userId: string, @Query() query: CalendarListQueryDto) {
@@ -65,11 +78,33 @@ export class CalendarController {
    */
   @Post('sync')
   @ApiOperation({ summary: 'Sync calendar schedules with Google services' })
-  @ApiQuery({ name: 'category', required: false, description: 'Filter by category after sync' })
-  @ApiQuery({ name: 'completion', required: false, description: 'Filter by completion state after sync', enum: ['all', 'completed', 'open'] })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by title, description, category, or raw input after sync' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number after sync' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Page size after sync' })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    description: 'Filter by category after sync',
+  })
+  @ApiQuery({
+    name: 'completion',
+    required: false,
+    description: 'Filter by completion state after sync',
+    enum: ['all', 'completed', 'open'],
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description:
+      'Search by title, description, category, or raw input after sync',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number after sync',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Page size after sync',
+  })
   sync(@GetUser('id') userId: string, @Query() query: CalendarListQueryDto) {
     return this.calendarService.syncAndFindAll(userId, query);
   }
