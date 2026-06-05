@@ -88,7 +88,7 @@ describe("authService cookie auth", () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "http://localhost:3000/api/users/me",
+      "/api/proxy/users/me",
       expect.objectContaining({
         method: "GET",
         credentials: "include",
@@ -116,7 +116,7 @@ describe("authService cookie auth", () => {
       JSON.stringify({ name: "Demo", email: "demo@mail.com" }),
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:3000/api/users/me",
+      "/api/proxy/users/me",
       expect.objectContaining({
         credentials: "include",
         headers: expect.objectContaining({

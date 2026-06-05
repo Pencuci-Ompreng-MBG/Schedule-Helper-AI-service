@@ -10,6 +10,7 @@ import {
 } from "react";
 import { apiFetch } from "@/lib/apiFetch";
 import { clearConversationStorage } from "@/lib/auth";
+import { proxyApiFetch } from "@/lib/proxyApiFetch";
 import type { Message, QuestionnairePayload, RawTasks } from "@/types";
 import { buildUserContent } from "@/utils/chatPayload";
 import { API_URL } from "@/utils/const";
@@ -129,7 +130,7 @@ export function useChat(userEmail?: string) {
 
     const loadThread = async () => {
       try {
-        const response = await apiFetch(`${API_URL}/agent/${current}`, {
+        const response = await proxyApiFetch(`/agent/${current}`, {
           method: "GET",
         });
 

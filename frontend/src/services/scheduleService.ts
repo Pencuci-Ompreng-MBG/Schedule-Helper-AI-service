@@ -6,8 +6,7 @@ import type {
   QuestionnairePayload,
   ScheduleItem,
 } from "@/types";
-import { API_URL } from "@/utils/const";
-import { apiFetch } from "@/lib/apiFetch";
+import { proxyApiFetch } from "@/lib/proxyApiFetch";
 
 // =============================================================
 // SCHEDULE SERVICE: Mengelola pembuatan jadwal dan riwayat
@@ -141,7 +140,7 @@ export const scheduleService = {
    * Terintegrasi dengan GET /api/agent
    */
   async getHistory(): Promise<HistoryItem[]> {
-    const response = await apiFetch(`${API_URL}/agent`, {
+    const response = await proxyApiFetch("/agent", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -164,7 +163,7 @@ export const scheduleService = {
    * Terintegrasi dengan GET /api/agent/:thread_id
    */
   async getScheduleById(id: string): Promise<any> {
-    const response = await apiFetch(`${API_URL}/agent/${id}`, {
+    const response = await proxyApiFetch(`/agent/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -187,8 +186,8 @@ export const scheduleService = {
    */
   async getCalendarTasks(params?: CalendarTaskQuery): Promise<CalendarTaskListResponse> {
     const queryString = scheduleService.buildCalendarQueryString(params);
-    const response = await apiFetch(
-      `${API_URL}/calendar${queryString ? `?${queryString}` : ""}`,
+    const response = await proxyApiFetch(
+      `/calendar${queryString ? `?${queryString}` : ""}`,
       {
         method: "GET",
         headers: {
@@ -214,7 +213,7 @@ export const scheduleService = {
    * Terintegrasi dengan GET /api/calendar/categories
    */
   async getCalendarCategories(): Promise<string[]> {
-    const response = await apiFetch(`${API_URL}/calendar/categories`, {
+    const response = await proxyApiFetch("/calendar/categories", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -239,8 +238,8 @@ export const scheduleService = {
    */
   async syncCalendarTasks(params?: CalendarTaskQuery): Promise<CalendarTaskListResponse> {
     const queryString = scheduleService.buildCalendarQueryString(params);
-    const response = await apiFetch(
-      `${API_URL}/calendar/sync${queryString ? `?${queryString}` : ""}`,
+    const response = await proxyApiFetch(
+      `/calendar/sync${queryString ? `?${queryString}` : ""}`,
       {
         method: "POST",
         headers: {
@@ -266,7 +265,7 @@ export const scheduleService = {
    * Terintegrasi dengan PATCH /api/calendar/:id
    */
   async updateCalendarTask(id: string, payload: any): Promise<any> {
-    const response = await apiFetch(`${API_URL}/calendar/${id}`, {
+    const response = await proxyApiFetch(`/calendar/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

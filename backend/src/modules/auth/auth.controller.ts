@@ -15,10 +15,11 @@ import { Response } from 'express';
 
 /** Opsi default untuk cookie autentikasi */
 const COOKIE_NAME = 'cookie_token';
+const COOKIE_SAME_SITE = process.env.NODE_ENV === 'production' ? 'none' : 'lax';
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  sameSite: COOKIE_SAME_SITE as 'none' | 'lax',
   path: '/',
   maxAge: 24 * 60 * 60 * 1000, // 1 hari (ms)
 };
@@ -69,7 +70,7 @@ export class AuthController {
     res.clearCookie(COOKIE_NAME, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
+      sameSite: COOKIE_SAME_SITE as 'none' | 'lax',
       path: '/',
     });
     return { message: 'Logged out successfully' };

@@ -7,6 +7,7 @@ import {
   setAuthCookieToken,
 } from "@/lib/auth";
 import { apiFetch } from "@/lib/apiFetch";
+import { proxyApiFetch } from "@/lib/proxyApiFetch";
 
 export const authService = {
   /**
@@ -14,7 +15,7 @@ export const authService = {
    */
   async getCurrentUser(): Promise<UserProfile> {
     try {
-      const response = await apiFetch(`${API_URL}/users/me`, {
+      const response = await proxyApiFetch("/users/me", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
