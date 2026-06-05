@@ -31,6 +31,9 @@ class RawTask(BaseModel):
     raw_time: Optional[str] = Field(description="Frasa waktu dari ucapan user, atau null jika tidak ada")
     raw_input: str = Field(description="Kalimat asli yang diucapkan user")
     category: CategoryType
+    is_vague: bool = Field(default=False, description="Set True HANYA jika user TIDAK menyebutkan nama tugas spesifik sama sekali (misal cuma bilang 'banyak tugas', 'kerjaan numpuk'). Set False jika ada nama/jenis kegiatannya (misal 'interview', 'tugas ABL').")
+
+
 
 class TaskBreakdown(TypedDict):
     task_id: str          # foreign key ke RawTask

@@ -31,6 +31,22 @@ const CONTROL_TOKEN_PATTERN = new RegExp(
 // (tanpa event khusus dari route.ts / tanpa prefix \x00)
 const LEAKED_EXEC_PATTERN = /EXECUTION_COMPLETE:(\{[\s\S]*?\})/g;
 
+function mergeStreamText(previous: string, incoming: string): string {
+  if (!previous) return incoming;
+  if (!incoming) return previous;
+  if (incoming.startsWith(previous)) return incoming;
+  if (previous.startsWith(incoming)) return previous;
+
+  const maxOverlap = Math.min(previous.length, incoming.length);
+  for (let overlap = maxOverlap; overlap > 0; overlap -= 1) {
+    if (previous.slice(-overlap) === incoming.slice(0, overlap)) {
+      return previous + incoming.slice(overlap);
+    }
+  }
+
+  return previous + incoming;
+}
+
 export type HitlPayload =
   | {
       type: "counselor_chat" | "counselor_review";
@@ -179,6 +195,9 @@ export function useChat(userEmail?: string) {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const assistantMessageIndexRef = useRef<number | null>(null);
+  const assistantStreamTextRef = useRef("");
+  const canonicalAssistantTextRef = useRef("");
 
   const setThreadIdInUrl = useCallback(
     (threadId: string) => {
@@ -214,9 +233,11 @@ export function useChat(userEmail?: string) {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let accumulated = "";
     let threadIdCaptured = false;
     let controlBuffer = "";
+
+    assistantStreamTextRef.current = "";
+    canonicalAssistantTextRef.current = "";
 
     while (true) {
       const { done, value } = await reader.read();
@@ -250,7 +271,14 @@ export function useChat(userEmail?: string) {
             if (execData.status === "waiting_hitl" && execData.hitl_payload) {
               setHitlPayload(execData.hitl_payload);
               if (execData.hitl_payload.message) {
-                if (!accumulated.includes(execData.hitl_payload.message)) {
+                canonicalAssistantTextRef.current = execData.hitl_payload.message;
+              }
+              if (execData.hitl_payload.message) {
+                if (
+                  !assistantStreamTextRef.current.includes(
+                    execData.hitl_payload.message,
+                  )
+                ) {
                   replacementText = execData.hitl_payload.message;
                 }
               }
@@ -311,8 +339,14 @@ export function useChat(userEmail?: string) {
           }
           if (execData.status === "waiting_hitl" && execData.hitl_payload) {
             setHitlPayload(execData.hitl_payload);
+            if (execData.hitl_payload.message) {
+              canonicalAssistantTextRef.current = execData.hitl_payload.message;
+            }
 
-            if (execData.hitl_payload.message && accumulated.includes(execData.hitl_payload.message)) {
+            if (
+              execData.hitl_payload.message &&
+              assistantStreamTextRef.current.includes(execData.hitl_payload.message)
+            ) {
               return "";
             }
             return execData.hitl_payload.message || "";
@@ -334,11 +368,10 @@ export function useChat(userEmail?: string) {
         combined = combined.slice(0, trailingControlStart);
       }
 
-      if (combined.startsWith(accumulated)) {
-        accumulated = combined;
-      } else {
-        accumulated += combined;
-      }
+      assistantStreamTextRef.current = mergeStreamText(
+        assistantStreamTextRef.current,
+        combined,
+      );
 
       // Deduplicate consecutive identical sentences/clauses and paragraphs
       const deduplicate = (text: string): string => {
@@ -362,16 +395,18 @@ export function useChat(userEmail?: string) {
         return dedupedParagraphs.join("\n\n");
       };
 
-      const deduplicated = deduplicate(accumulated);
+      const deduplicated = deduplicate(assistantStreamTextRef.current);
+      const displayText = canonicalAssistantTextRef.current || deduplicated;
 
       setMessages((prev) => {
         const updated = [...prev];
-        const lastIdx = updated.length - 1;
+        const targetIndex = assistantMessageIndexRef.current ?? updated.length - 1;
 
-        if (updated[lastIdx]?.role === "system") {
-          updated[lastIdx] = { role: "system", content: deduplicated };
-        } else if (deduplicated.trim() !== "") {
-          updated.push({ role: "system", content: deduplicated });
+        if (updated[targetIndex]?.role === "system") {
+          updated[targetIndex] = { role: "system", content: displayText };
+        } else if (displayText.trim() !== "") {
+          updated.push({ role: "system", content: displayText });
+          assistantMessageIndexRef.current = updated.length - 1;
         }
 
         return updated;
@@ -399,6 +434,8 @@ export function useChat(userEmail?: string) {
     setInputValue(""); // Bersihkan input (aman dilakukan di kedua kondisi)
     setIsStarted(true);
     setIsTyping(true);
+    assistantMessageIndexRef.current = null;
+    assistantStreamTextRef.current = "";
 
     // 2. Update Message State
     const userMessage = { role: "user" as const, content: userContent };
@@ -406,7 +443,9 @@ export function useChat(userEmail?: string) {
     setMessages((prev) => {
       const nextMessages = [...prev, userMessage];
       persistMessages(nextMessages); // Simpan pesan user
-      return [...nextMessages, { role: "system" as const, content: "" }];
+      const updated = [...nextMessages, { role: "system" as const, content: "" }];
+      assistantMessageIndexRef.current = updated.length - 1;
+      return updated;
     });
 
     // 3. API Call

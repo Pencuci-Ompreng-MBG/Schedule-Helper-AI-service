@@ -32,7 +32,7 @@ export class AgentController {
   constructor(private readonly agentService: AgentService) {}
 
   /**
-   * Endpoint untuk mengirim pesan ke AI (LangGraph) dan menerima balasannya 
+   * Endpoint untuk mengirim pesan ke AI (LangGraph) dan menerima balasannya
    * secara real-time menggunakan mekanisme Server-Sent Events (SSE) / stream.
    */
   @Post('stream')
@@ -43,7 +43,8 @@ export class AgentController {
     @GetUser('id') userId: string,
   ) {
     try {
-      const authHeader = req.headers.authorization;
+      const cookieHeader = req.headers.cookie;
+
       const cleanPayload: ChatDto = {
         message: body.message,
         approved_data: body?.approved_data,
@@ -63,7 +64,7 @@ export class AgentController {
         url: isResume
           ? `${process.env.AI_API ?? 'http://localhost:8000'}/resume/${cleanPayload.thread_id}/stream`
           : `${process.env.AI_API ?? 'http://localhost:8000'}/chat/stream`,
-        headers: authHeader ? { Authorization: authHeader } : undefined,
+        headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
         data: isResume
           ? {
               user_id: userId,
@@ -188,7 +189,7 @@ export class AgentController {
   }
 
   /**
-   * Endpoint untuk mengambil detail isi riwayat pesan (chat history) 
+   * Endpoint untuk mengambil detail isi riwayat pesan (chat history)
    * dari satu percakapan/thread yang spesifik beserta status terakhir AI-nya.
    */
   @Get(':thread_id')

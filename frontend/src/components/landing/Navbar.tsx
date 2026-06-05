@@ -1,18 +1,23 @@
+import Image from "next/image";
 import Link from "next/link";
 
-/**
- * LANDING: Navbar component
- */
 export function Navbar() {
   return (
     <header className="flex justify-between items-center px-6 md:px-12 lg:px-16 py-5 w-full">
-      <Link href="/" className="block">
-        <img
-          src="/logo-with-title.svg"
-          alt="Schedule Helper Logo"
-          className="h-8 w-auto object-contain"
-        />
-      </Link>
+      <div className="p-3">
+        <Link href="/" className="block w-full">
+          <div className="w-full h-10 relative">
+            <Image
+              src="/logo-with-title.svg"
+              alt="logo with title"
+              width={200}
+              height={40}
+              className="object-contain"
+              sizes="(max-width: 640px) 120px, 160px"
+            />
+          </div>
+        </Link>
+      </div>
       <div className="flex items-center gap-6">
         <Link
           href="/auth/login"

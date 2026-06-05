@@ -1,7 +1,8 @@
 import json
 import traceback
 from collections.abc import AsyncIterator
-from fastapi import APIRouter, Depends, Header, HTTPException
+# Tambahkan Request di sini
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from app.api.schemas import HITLResumeRequest, ResumeResponse
 from app.dependencies import get_graph
@@ -64,13 +65,14 @@ def _normalize_update_payload(update: dict) -> dict:
     return update
 
 
-def _inject_authorization(approved_data: dict, authorization: str | None) -> dict:
-    if not authorization:
+# Diubah: Sekarang menginjeksi dictionary cookies alih-alih token string
+def _inject_cookies(approved_data: dict, cookies: dict | None) -> dict:
+    if not cookies:
         return approved_data
-    for key in ("authorization", "auth_token", "access_token"):
-        if approved_data.get(key):
-            return approved_data
-    return {**approved_data, "authorization": authorization}
+    
+    # Jika sudah ada key cookies di approved_data, kita biarkan saja atau update terserah preferensi
+    # Tapi biasanya aman untuk di-overwrite atau disematkan.
+    return {**approved_data, "cookies": cookies}
 
 
 async def _stream_resume_events(
@@ -80,7 +82,7 @@ async def _stream_resume_events(
     approved_data: dict,
 ) -> AsyncIterator[str]:
     """Stream resume events as SSE."""
-    print(f"[resume-stream][start][thread_id={thread_id}]")
+    # print(f"[resume-stream][start][thread_id={thread_id}]")
     try:
         async for stream_item in graph.astream(
             Command(resume=approved_data),
@@ -105,10 +107,6 @@ async def _stream_resume_events(
 
                 text = _chunk_to_text(chunk)
                 if text:
-                    print(
-                        f"[resume-stream][message][thread_id={thread_id}] "
-                        f"node={_extract_node_name(metadata)} text={text}"
-                    )
                     yield _format_sse(
                         "message",
                         {
@@ -163,10 +161,10 @@ async def _stream_resume_events(
 
 @router.post("/{thread_id}", response_model=ResumeResponse)
 async def resume(
+    request: Request, # Ditambahkan
     thread_id: str,
     body: HITLResumeRequest,
     graph=Depends(get_graph),
-    authorization: str | None = Header(default=None, alias="Authorization"),
 ):
     """
     Dipanggil NestJS setelah user approve/edit data di frontend.
@@ -186,7 +184,11 @@ async def resume(
     if not state.next:
         raise HTTPException(status_code=400, detail="Thread ini tidak sedang menunggu HITL")
 
-    approved_data = _inject_authorization(body.approved_data, authorization)
+    # Ambil cookies dari request
+    user_cookies = dict(request.cookies)
+    
+    # Inject cookies ke approved_data
+    approved_data = _inject_cookies(body.approved_data, user_cookies)
 
     try:
         # inject approved_data sebagai Command untuk resume interrupt
@@ -219,10 +221,10 @@ async def resume(
 
 @router.post("/{thread_id}/stream")
 async def resume_stream(
+    request: Request, # Ditambahkan
     thread_id: str,
     body: HITLResumeRequest,
     graph=Depends(get_graph),
-    authorization: str | None = Header(default=None, alias="Authorization"),
 ):
     """
     Stream resume events as Server-Sent Events (SSE).
@@ -237,7 +239,11 @@ async def resume_stream(
     if not state.next:
         raise HTTPException(status_code=400, detail="Thread ini tidak sedang menunggu HITL")
 
-    approved_data = _inject_authorization(body.approved_data, authorization)
+    # Ambil cookies dari request
+    user_cookies = dict(request.cookies)
+    
+    # Inject cookies ke approved_data
+    approved_data = _inject_cookies(body.approved_data, user_cookies)
 
     return StreamingResponse(
         _stream_resume_events(graph, config, thread_id, approved_data),

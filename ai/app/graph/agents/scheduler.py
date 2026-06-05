@@ -9,7 +9,7 @@ import logging
 from app.graph.state import GraphState
 from app.graph.agents.helpers import get_proposed_schedule, get_metadata, ai_msg
 from app.graph.types import CategoryType, ScheduleItem
-
+from langchain_core.runnables import RunnableConfig
 
 # ---------------------------------------------------------------------------
 # Agent 4: SchedulerAgent
@@ -43,11 +43,15 @@ def make_scheduler(llm=None, calendar_client=None):
         hitl_status = state.get("hitl_status")
         hitl_input = state.get("hitl_input") or {}
 
-        is_approved = (hitl_status == "approved") or (hitl_input.get("approved") is True)
+        is_approved = (hitl_status == "approved") or (
+            hitl_input.get("approved") is True
+        )
 
         if not is_approved:
             return {
-                **ai_msg("Jadwal belum di-approve user, jadi belum bisa dikirim ke Calendar."),
+                **ai_msg(
+                    "Jadwal belum di-approve user, jadi belum bisa dikirim ke Calendar."
+                ),
                 "error_message": "Jadwal belum di-approve user.",
                 "api_status": 400,
                 "api_payload": {
@@ -94,7 +98,9 @@ def make_scheduler(llm=None, calendar_client=None):
 
                 except Exception as llm_err:
                     return {
-                        **ai_msg("Format jadwal sangat tidak beraturan dan sistem AI gagal memformat ulang secara otomatis."),
+                        **ai_msg(
+                            "Format jadwal sangat tidak beraturan dan sistem AI gagal memformat ulang secara otomatis."
+                        ),
                         "error_message": f"Init Error: {validation_err} | LLM Auto-Fix Error: {llm_err}",
                         "api_status": 400,
                         "api_payload": {
@@ -120,26 +126,31 @@ def make_scheduler(llm=None, calendar_client=None):
                 metadata=metadata,
             )
 
-            logger.info("[scheduler] calendar_payloads=%s", json.dumps(calendar_payloads))
+            logger.info(
+                "[scheduler] calendar_payloads=%s", json.dumps(calendar_payloads)
+            )
 
-            auth_token = _extract_auth_token(metadata) or _extract_auth_token(hitl_input)
+            # Mengambil cookies dari metadata (saat chat awal) atau hitl_input (saat resume)
+            user_cookies = _extract_cookies(metadata) or _extract_cookies(hitl_input)
 
             logger.info(
-                "[scheduler] auth_token_present=%s base_url=%s",
-                bool(auth_token),
+                "[scheduler] cookies_present=%s base_url=%s",
+                bool(user_cookies),
                 getattr(calendar_client, "base_url", None),
             )
 
             created_events = _send_to_backend_calendar(
                 calendar_client=calendar_client,
                 calendar_payloads=calendar_payloads,
-                auth_token=auth_token,
+                cookies=user_cookies,
             )
 
         except ValueError as err:
             logger.exception("[scheduler] build payload error: %s", err)
             return {
-                **ai_msg("Terdapat kesalahan fatal pada format tanggal saat mempersiapkan data jadwal."),
+                **ai_msg(
+                    "Terdapat kesalahan fatal pada format tanggal saat mempersiapkan data jadwal."
+                ),
                 "error_message": str(err),
                 "api_status": 400,
                 "api_payload": {
@@ -168,7 +179,9 @@ def make_scheduler(llm=None, calendar_client=None):
         event_ids = [event["event_id"] for event in created_events]
 
         return {
-            **ai_msg(f"Berhasil menjadwalkan {len(created_events)} kegiatan ke Google Calendar."),
+            **ai_msg(
+                f"Berhasil menjadwalkan {len(created_events)} kegiatan ke Google Calendar."
+            ),
             "metadata": {
                 **metadata,
                 "scheduled": True,
@@ -274,15 +287,17 @@ def _validate_schedule_items(schedule_items: list[ScheduleItem]) -> list[Schedul
 
         _parse_iso_datetime(str(item["start_time"]))
 
-        normalized_items.append({
-            "task_id": str(item["task_id"]),
-            "task": str(item["task"]),
-            "priority": priority,
-            "start_time": str(item["start_time"]),
-            "duration_minutes": duration,
-            "category": category,
-            "subtasks": item.get("subtasks", []),
-        })
+        normalized_items.append(
+            {
+                "task_id": str(item["task_id"]),
+                "task": str(item["task"]),
+                "priority": priority,
+                "start_time": str(item["start_time"]),
+                "duration_minutes": duration,
+                "category": category,
+                "subtasks": item.get("subtasks", []),
+            }
+        )
 
     return normalized_items
 
@@ -309,21 +324,23 @@ def _build_calendar_payloads(
             end_dt=end_dt,
         )
 
-        payloads.append({
-            "title": title,
-            "description": (
-                f"ID: {item['task_id']} | "
-                f"Priority: {item['priority']} | "
-                f"Reasoning: {reasoning}"
-            ),
-            "category": item["category"],
-            "estimatedMinutes": item["duration_minutes"],
-            "priority": item["priority"],
-            "deadline": end_dt.isoformat(),
-            "startTime": start_dt.isoformat(),
-            "status": "pending",
-            "subtasks": item.get("subtasks", []),
-        })
+        payloads.append(
+            {
+                "title": title,
+                "description": (
+                    f"ID: {item['task_id']} | "
+                    f"Priority: {item['priority']} | "
+                    f"Reasoning: {reasoning}"
+                ),
+                "category": item["category"],
+                "estimatedMinutes": item["duration_minutes"],
+                "priority": item["priority"],
+                "deadline": end_dt.isoformat(),
+                "startTime": start_dt.isoformat(),
+                "status": "pending",
+                "subtasks": item.get("subtasks", []),
+            }
+        )
 
     return payloads
 
@@ -354,18 +371,20 @@ def _build_calendar_reasoning(
 def _send_to_backend_calendar(
     calendar_client,
     calendar_payloads: list[dict],
-    auth_token: str | None,
+    cookies: dict | None,
 ) -> list[dict]:
     events: list[dict] = []
 
     for payload in calendar_payloads:
-        response = calendar_client.create_schedule(payload, token=auth_token)
+        response = calendar_client.create_schedule(payload, cookies=cookies)
 
-        events.append({
-            "event_id": _extract_event_id(response),
-            **payload,
-            "raw_response": response,
-        })
+        events.append(
+            {
+                "event_id": _extract_event_id(response),
+                **payload,
+                "raw_response": response,
+            }
+        )
 
     return events
 
@@ -393,27 +412,29 @@ def _parse_iso_datetime(value: str, timezone_name: str = DEFAULT_TIMEZONE) -> da
     except ValueError as err:
         raise ValueError(f"ISO format invalid: {value}") from err
 
-    # PERBAIKAN: Selalu gunakan offset-aware datetime!
-    # NestJS API & class-validator butuh format waktu beserta offsetnya (misal +07:00).
-    # Jika kita kirim naive datetime, backend bisa mengira ini adalah waktu UTC.
     if dt.tzinfo is None:
         tz = _get_tzinfo(timezone_name)
         dt = dt.replace(tzinfo=tz)
 
     return dt
 
+
 def _get_tzinfo(timezone_name: str):
     try:
         return ZoneInfo(timezone_name)
     except ZoneInfoNotFoundError:
-        return timezone(timedelta(hours=7)) if timezone_name == DEFAULT_TIMEZONE else timezone.utc
+        return (
+            timezone(timedelta(hours=7))
+            if timezone_name == DEFAULT_TIMEZONE
+            else timezone.utc
+        )
 
 
-def _extract_auth_token(metadata: dict) -> str | None:
-    for key in ("auth_token", "access_token", "authorization"):
-        value = metadata.get(key)
-
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-
+def _extract_cookies(source_dict: dict) -> dict | None:
+    """
+    Mengekstrak dictionary cookies secara aman dari state/metadata.
+    """
+    cookies = source_dict.get("cookies")
+    if isinstance(cookies, dict) and cookies:
+        return cookies
     return None

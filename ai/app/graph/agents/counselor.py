@@ -80,6 +80,7 @@ DISCOVERY_SYSTEM = """Ekstrak setiap task yang disebutkan user menjadi item terp
 Aturan:
 - Satu task = satu item
 - Gunakan bahasa persis user untuk title
+- KONTEKS PENTING: Jika user merespons dengan kata ganti (misal: "yang kamu bilang", "yang itu"), bacalah 'Pesan AI Sebelumnya' untuk mengetahui apa tugas yang dimaksud.
 - Jangan gabungkan task berbeda
 - WAJIB tentukan "category" dengan panduan berikut:
   * "serius" : Berhubungan dengan tugas, PR, ujian, kuliah, project, laporan, atau pekerjaan.
@@ -97,10 +98,11 @@ Pisahkan:
 Aturan Deskripsi (SANGAT PENTING):
 - Tulis ulang dalam sudut pandang orang ketiga (contoh: "Pengguna merasa...", "Tugas ini adalah...").
 - GABUNGKAN konteks "Deskripsi Lama" dengan "Jawaban Baru" menjadi paragraf yang padu dan enak dibaca.
-- KOREKSI KONTRADIKSI: Jika di "Deskripsi Lama" tertulis "belum ada informasi deadline/topik", namun "Jawaban Baru" SUDAH memberitahunya, maka HAPUS kalimat keluhan "belum ada informasi" tersebut dari deskripsi baru.
+- KONTEKS PERCAKAPAN: Perhatikan 'Pertanyaan AI Sebelumnya'. Jika user merespons dengan kata ganti (misal: "yang itu", "yang kamu sebutin", "betul"), simpulkan maksud user berdasarkan ide/contoh yang ditawarkan di Pertanyaan AI Sebelumnya!
+- KOREKSI KONTRADIKSI: Jika di "Deskripsi Lama" tertulis "belum ada informasi deadline", namun "Jawaban Baru" SUDAH memberitahunya, maka HAPUS kalimat "belum ada informasi" tersebut.
 - SEBUTKAN DEADLINE DI DESKRIPSI: Jika user memberikan deadline, tuliskan juga secara natural di dalam kalimat deskripsi.
 - JANGAN sekadar menempelkan kata-kata mentah user di belakang kalimat lama. Rangkai bahasanya secara mulus.
-- Jangan hilangkan informasi penting (seperti emosi, rasa stress/bingung) dari deskripsi lama jika tidak bertentangan.
+- Jangan hilangkan emosi/rasa stress dari deskripsi lama jika tidak bertentangan.
 - deadline_confirmed_none=True HANYA jika user eksplisit bilang tidak ada deadline."""
 
 REVIEW_SYSTEM = """Kamu adalah teman yang hangat dan supportif, membantu user yang lagi overwhelmed dengan kegiatannya.
@@ -137,10 +139,11 @@ REVIEW_ENRICH_SYSTEM = """Update deskripsi task dari cerita tambahan user.
 Aturan Deskripsi (SANGAT PENTING):
 1. Tulis ulang dalam sudut pandang orang ketiga (contoh: "Pengguna merasa...").
 2. GABUNGKAN info lama dengan info baru menjadi paragraf yang padu.
-3. KOREKSI KONTRADIKSI: Jika info baru menjawab hal yang sebelumnya "belum jelas/tidak ada deadline", HAPUS pernyataan "belum jelas/belum ada" tersebut dari deskripsi.
-4. JANGAN hanya menempelkan kalimat mentah user di akhir.
-5. Jangan hapus deskripsi lama yang valid (emosi, konteks awal).
-6. Hanya update task yang relevan dengan cerita user."""
+3. KONTEKS PERCAKAPAN: Selalu baca 'Pesan AI Sebelumnya' agar paham konteks ucapan user jika mereka memakai kata ganti ("yang pertama", "yang kamu sebut", dll).
+4. KOREKSI KONTRADIKSI: Jika info baru menjawab hal yang sebelumnya "belum jelas/tidak ada deadline", HAPUS pernyataan "belum jelas/belum ada" tersebut dari deskripsi.
+5. JANGAN hanya menempelkan kalimat mentah user di akhir.
+6. Jangan hapus deskripsi lama yang valid (emosi, konteks awal).
+7. Hanya update task yang relevan dengan cerita user."""
 
 DISCOVERY_CHAT_SYSTEM = """Kamu adalah teman yang hangat dan supportif.
 User sedang merasa pusing/overwhelmed/stress karena kewajiban yang menumpuk, TAPI mereka belum menyebutkan secara spesifik apa saja kegiatannya.
@@ -159,7 +162,8 @@ TUGAS UTAMA:
 1. Acknowledge/sebutkan nama tugas yang sedang ditanyakan ke user saat ini.
 2. Tanyakan 2 hal ini kepada user: ini ngerjain apa sebenarnya? dan kapan target selesainya/deadlinenya?
 3. Jika ini adalah tugas pertama yang dibahas (is_first=True), tambahkan kalimat penenang singkat di awal sebelum bertanya.
-4. Gunakan bahasa/tone yang PERSIS senada dengan ucapan user.
+4. Jangan terlalu kaku. Beri pancingan jawaban atau contoh (misalnya jika user bingung nyiapin interview, kasih contoh: 'misalnya pertanyaan umum atau portfolio').
+5. Gunakan bahasa/tone yang PERSIS senada dengan ucapan user.
 Batas: Maksimal 3 kalimat."""
 
 
@@ -176,6 +180,9 @@ def make_counselor(llm, _interrupt=None, calendar_client=None):
         prev_hitl = get_hitl_input(state) or {}
         user_msg = last_message(state)
         loop_count = len(state.get("counselor_response") or [])
+
+        # Ekstrak pesan AI terakhir kali untuk konteks LLM
+        ai_prev_msg = prev_hitl.get("message", "")
 
         _log("=== RUN ===", f"loop={loop_count} phase={prev_hitl.get('phase', 'init')}")
 
@@ -194,6 +201,7 @@ def make_counselor(llm, _interrupt=None, calendar_client=None):
                 llm,
                 interrupt_fn,
                 loop_count,
+                ai_prev_msg,
             )
         elif phase == "detail":
             return _phase_detail(
@@ -204,10 +212,17 @@ def make_counselor(llm, _interrupt=None, calendar_client=None):
                 llm,
                 interrupt_fn,
                 loop_count,
+                ai_prev_msg,
             )
         elif phase == "review":
             return _phase_review(
-                raw_tasks, user_msg, prev_hitl, llm, interrupt_fn, loop_count
+                raw_tasks,
+                user_msg,
+                prev_hitl,
+                llm,
+                interrupt_fn,
+                loop_count,
+                ai_prev_msg,
             )
         else:
             return _force_done(raw_tasks)
@@ -227,6 +242,7 @@ def _phase_init(
     llm,
     interrupt_fn,
     loop_count,
+    ai_prev_msg,
 ):
     _log("PHASE init")
 
@@ -252,7 +268,7 @@ def _phase_init(
                 },
             )
 
-        new_tasks = _parse_discovery(discovery_llm, answer)
+        new_tasks = _parse_discovery(discovery_llm, answer, ai_prev_msg)
 
         if not new_tasks:
             retry = (
@@ -307,7 +323,9 @@ def _phase_init(
         )
 
         answer = (result.get("additional_context") or "").strip()
-        meta = _apply_answer(detail_llm, meta, idx, answer)
+        meta = _apply_answer(
+            detail_llm, meta, idx, answer, msg
+        )  # berikan 'msg' sbg ai_prev_msg krn ini baru pertama tanya
         nxt = _next_incomplete(meta, idx)
 
         if nxt is None:
@@ -339,7 +357,14 @@ def _phase_init(
 
 
 def _phase_detail(
-    raw_tasks, user_msg, prev_hitl, detail_llm, llm, interrupt_fn, loop_count
+    raw_tasks,
+    user_msg,
+    prev_hitl,
+    detail_llm,
+    llm,
+    interrupt_fn,
+    loop_count,
+    ai_prev_msg,
 ):
     _log("PHASE detail")
 
@@ -359,15 +384,11 @@ def _phase_detail(
             },
         )
 
-    msg = _detail_q(llm, meta[current_idx], is_first=False, user_msg=user_msg)
-    _log(f"INTERRUPT detail[{current_idx}]", msg)
-    result = (
-        interrupt_fn({"type": "counselor_chat", "message": msg, "phase": "chat"}) or {}
-    )
+    # Kalau user baru merespons, apply answer dengan konteks ai_prev_msg
+    if ai_prev_msg:
+        answer = (prev_hitl.get("additional_context") or user_msg).strip()
+        meta = _apply_answer(detail_llm, meta, current_idx, answer, ai_prev_msg)
 
-    answer = (result.get("additional_context") or "").strip()
-
-    meta = _apply_answer(detail_llm, meta, current_idx, answer)
     nxt = _next_incomplete(meta, current_idx)
 
     if nxt is None:
@@ -383,6 +404,13 @@ def _phase_detail(
             },
         )
 
+    # Tanya task berikutnya
+    msg = _detail_q(llm, meta[nxt], is_first=False, user_msg=user_msg)
+    _log(f"INTERRUPT detail[{nxt}]", msg)
+
+    # Update hitl payload dengan pertanyaan yang baru dibuat
+    interrupt_fn({"type": "counselor_chat", "message": msg, "phase": "detail"})
+
     return _chat_return(
         msg,
         _to_tasks(meta),
@@ -392,6 +420,7 @@ def _phase_detail(
             "tasks_with_meta": meta,
             "review_count": review_count,
             "additional_context": "",
+            "message": msg,  # simpan untuk siklus ke depan
         },
     )
 
@@ -399,7 +428,9 @@ def _phase_detail(
 # ── Phase: Review ─────────────────────────────────────────────────────────────
 
 
-def _phase_review(raw_tasks, user_msg, prev_hitl, llm, interrupt_fn, loop_count):
+def _phase_review(
+    raw_tasks, user_msg, prev_hitl, llm, interrupt_fn, loop_count, ai_prev_msg
+):
     _log("PHASE review")
 
     meta = prev_hitl.get("tasks_with_meta") or _init_meta(raw_tasks)
@@ -422,7 +453,7 @@ def _phase_review(raw_tasks, user_msg, prev_hitl, llm, interrupt_fn, loop_count)
                     {"role": "system", "content": REVIEW_ENRICH_SYSTEM},
                     {
                         "role": "user",
-                        "content": f"Cerita Tambahan User: {extra}\n\nTask:\n{task_context}",
+                        "content": f"Pesan AI Sebelumnya:\n{ai_prev_msg}\n\nCerita Tambahan User:\n{extra}\n\nTask:\n{task_context}",
                     },
                 ]
             )
@@ -517,6 +548,7 @@ def _do_review(
             "tasks_with_meta": meta,
             "review_count": review_count + 1,
             "additional_context": extra,
+            "message": full_review,  # simpan review sbg konteks
         },
     )
 
@@ -524,12 +556,15 @@ def _do_review(
 # ── Task Parsing ──────────────────────────────────────────────────────────────
 
 
-def _parse_discovery(discovery_llm, user_answer: str) -> list[dict]:
+def _parse_discovery(discovery_llm, user_answer: str, ai_prev_msg: str) -> list[dict]:
     try:
         result = discovery_llm.invoke(
             [
                 {"role": "system", "content": DISCOVERY_SYSTEM},
-                {"role": "user", "content": f"User menyebutkan: {user_answer}"},
+                {
+                    "role": "user",
+                    "content": f"Pesan AI Sebelumnya:\n{ai_prev_msg}\n\nJawaban User:\n{user_answer}",
+                },
             ]
         )
         tasks = []
@@ -549,10 +584,12 @@ def _parse_discovery(discovery_llm, user_answer: str) -> list[dict]:
         return []
 
 
-def _apply_answer(detail_llm, meta: list, idx: int, answer: str) -> list:
+def _apply_answer(
+    detail_llm, meta: list, idx: int, answer: str, ai_prev_msg: str
+) -> list:
     """
     Parse jawaban user untuk task[idx] dan update meta.
-    Sekarang melemparkan deskripsi lama agar direwrite/digabungkan dengan padu oleh LLM.
+    Sekarang menyertakan ai_prev_msg agar LLM paham konteks (misal user bilang "yang itu").
     """
     if idx >= len(meta):
         return meta
@@ -575,10 +612,11 @@ def _apply_answer(detail_llm, meta: list, idx: int, answer: str) -> list:
                 {
                     "role": "user",
                     "content": (
-                        f"Task: {target.get('title', 'task ini')}\n"
-                        f"Deskripsi Lama: {old_desc}\n"
+                        f"Task yang dibahas: {target.get('title', 'task ini')}\n"
+                        f"Deskripsi Lama: {old_desc}\n\n"
+                        f"Pertanyaan AI Sebelumnya: {ai_prev_msg}\n"
                         f"Jawaban Baru User: {answer}\n\n"
-                        f"Tulis ulang menjadi deskripsi yang padu!"
+                        f"Berdasarkan pertanyaan AI dan jawaban user, perbarui Deskripsi Lama menjadi deskripsi yang padu!"
                     ),
                 },
             ]
@@ -708,38 +746,17 @@ def _fallback_review(tasks: list) -> str:
 
 
 def _is_vague(raw_tasks: list) -> bool:
+    """
+    Cek apakah nama tugas fiktif/terlalu umum berdasarkan flag dari Router.
+    """
     if not raw_tasks:
         return True
-    vague_kw = [
-        "belum jelas",
-        "tidak disebutkan",
-        "tidak diketahui",
-        "banyak tugas",
-        "tugas numpuk",
-        "belum ditentukan",
-        "tidak ada detail",
-        "tidak tahu",
-    ]
+
+    # PERBAIKAN 2: Percayakan deteksi pada flag is_vague dari Router
     if len(raw_tasks) == 1:
-        t = raw_tasks[0]
-        title = (_get(t, "title") or "").lower()
-        desc = (_get(t, "description") or "").lower()
-        generic = [
-            "banyak tugas",
-            "tugas",
-            "kerjaan",
-            "task",
-            "banyak kerjaan",
-            "pekerjaan",
-        ]
-        if any(g == title for g in generic):
-            return True
-        if any(kw in desc for kw in vague_kw):
-            return True
-    return all(
-        any(kw in (_get(t, "description") or "").lower() for kw in vague_kw)
-        for t in raw_tasks
-    )
+        return bool(_get(raw_tasks[0], "is_vague"))
+
+    return False
 
 
 def _init_meta(raw_tasks: list) -> list[dict]:

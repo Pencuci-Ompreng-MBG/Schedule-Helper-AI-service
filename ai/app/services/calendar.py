@@ -8,25 +8,17 @@ from app.config import settings
 
 
 class BackendCalendarClient:
-    """HTTP client untuk Calendar API backend (NestJS)."""
+    """HTTP client untuk Calendar API backend (NestJS) menggunakan Cookies."""
 
     def __init__(self, base_url: str):
         self.base_url = base_url.rstrip("/")
         self._client = httpx.Client(timeout=10.0)
 
-    def _build_headers(self, token: str | None) -> dict[str, str]:
-        headers = {"Content-Type": "application/json"}
-        auth_token = token or settings.backend_api_token
-        if auth_token:
-            if auth_token.lower().startswith("bearer "):
-                headers["Authorization"] = auth_token
-            else:
-                headers["Authorization"] = f"Bearer {auth_token}"
-        return headers
+    def _build_headers(self) -> dict[str, str]:
+        # Hanya mengembalikan tipe konten, auth diurus via cookies
+        return {"Content-Type": "application/json"}
 
-    def _handle_response(
-        self, response: httpx.Response, method: str, url: str
-    ) -> Any:
+    def _handle_response(self, response: httpx.Response, method: str, url: str) -> Any:
         if response.status_code >= 400:
             detail = response.text
             content_type = response.headers.get("Content-Type", "")
@@ -65,68 +57,74 @@ class BackendCalendarClient:
         self,
         method: str,
         path: str,
-        token: str | None = None,
+        cookies: dict[str, str] | None = None,
         payload: dict | None = None,
     ) -> Any:
         url = f"{self.base_url}{path}"
         logging.getLogger(__name__).info(
-            "[calendar_client] request %s %s payload=%s",
+            "[calendar_client] request %s %s payload=%s cookies=%s",
             method,
             url,
             payload,
+            bool(cookies),  # Hanya log boolean untuk alasan keamanan
         )
         try:
             response = self._client.request(
                 method,
                 url,
-                headers=self._build_headers(token),
+                headers=self._build_headers(),
+                cookies=cookies,  # Pass cookies ke httpx
                 json=payload,
             )
         except httpx.TimeoutException as exc:
-            raise ValueError(
-                f"Calendar API timeout (10s) {method} {url}"
-            ) from exc
+            raise ValueError(f"Calendar API timeout (10s) {method} {url}") from exc
         except httpx.RequestError as exc:
             raise ValueError(
                 f"Calendar API connection error {method} {url}: {exc}"
             ) from exc
         return self._handle_response(response, method, url)
 
-    def list_schedules(self, token: str | None = None) -> list[dict]:
-        data = self._request_json("GET", "/api/calendar", token=token)
+    def list_schedules(self, cookies: dict[str, str] | None = None) -> list[dict]:
+        data = self._request_json("GET", "/api/calendar", cookies=cookies)
         return data if isinstance(data, list) else []
 
-    def get_schedule(self, schedule_id: str, token: str | None = None) -> dict:
+    def get_schedule(
+        self, schedule_id: str, cookies: dict[str, str] | None = None
+    ) -> dict:
         data = self._request_json(
             "GET",
             f"/api/calendar/{schedule_id}",
-            token=token,
+            cookies=cookies,
         )
         return data if isinstance(data, dict) else {}
 
-    def create_schedule(self, dto: dict, token: str | None = None) -> dict:
+    def create_schedule(self, dto: dict, cookies: dict[str, str] | None = None) -> dict:
         data = self._request_json(
             "POST",
             "/api/calendar",
-            token=token,
+            cookies=cookies,
             payload=dto,
         )
         return data if isinstance(data, dict) else {}
 
-    def update_schedule(self, schedule_id: str, dto: dict, token: str | None = None) -> dict:
+    def update_schedule(
+        self, schedule_id: str, dto: dict, cookies: dict[str, str] | None = None
+    ) -> dict:
         data = self._request_json(
             "PATCH",
             f"/api/calendar/{schedule_id}",
-            token=token,
+            cookies=cookies,
             payload=dto,
         )
         return data if isinstance(data, dict) else {}
 
-    def delete_schedule(self, schedule_id: str, token: str | None = None) -> dict:
+    def delete_schedule(
+        self, schedule_id: str, cookies: dict[str, str] | None = None
+    ) -> dict:
         data = self._request_json(
             "DELETE",
             f"/api/calendar/{schedule_id}",
-            token=token,
+            cookies=cookies,
         )
         return data if isinstance(data, dict) else {}
 

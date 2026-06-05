@@ -2,14 +2,13 @@
 import traceback
 import uuid
 from collections.abc import AsyncIterator
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 from app.api.schemas import ChatRequest, ChatResponse
 from app.dependencies import get_graph
 
 router = APIRouter(prefix="/chat", tags=["chat"])
-
 
 async def _print_step_state(graph, config: dict, thread_id: str, step_update: dict) -> None:
     state = await graph.aget_state(config)
@@ -19,11 +18,12 @@ async def _print_step_state(graph, config: dict, thread_id: str, step_update: di
         f"node={node} next={list(state.next)} values={state.values}"
     )
 
-
-def _chat_input(body: ChatRequest, thread_id: str, authorization: str | None = None) -> dict:
+# Ubah authorization menjadi cookies (tipe dict)
+def _chat_input(body: ChatRequest, thread_id: str, cookies: dict | None = None) -> dict:
     metadata = {"user_id": body.user_id}
-    if authorization:
-        metadata["authorization"] = authorization
+    if cookies:
+        metadata["cookies"] = cookies  # type: ignore 
+        
     return {
         "messages": [HumanMessage(content=body.message)],
         "user_input": body.message,
@@ -88,16 +88,17 @@ def _normalize_update_payload(update: dict) -> dict:
     return update
 
 
+# Ubah authorization menjadi cookies
 async def _stream_chat_events(
     graph,
     config: dict,
     thread_id: str,
     body: ChatRequest,
-    authorization: str | None,
+    cookies: dict | None,
 ) -> AsyncIterator[str]:
     try:
         async for stream_item in graph.astream(
-            _chat_input(body, thread_id, authorization),
+            _chat_input(body, thread_id, cookies), # Teruskan cookies ke _chat_input
             config=config,
             stream_mode=["messages", "updates"],
         ):
@@ -169,26 +170,22 @@ async def _stream_chat_events(
 
 @router.post("", response_model=ChatResponse)
 async def chat(
+    request: Request, # Tambahkan Request untuk ambil cookies
     body: ChatRequest,
     graph=Depends(get_graph),
-    authorization: str | None = Header(default=None, alias="Authorization"),
 ):
     """
     Entry point percakapan baru atau lanjutan.
-
-    Kalau thread_id tidak dikirim → buat thread baru.
-    Kalau thread_id dikirim → lanjut thread yang sudah ada.
-
-    Response:
-    - status "waiting_hitl" → frontend harus tampilkan hitl_payload ke user
-    - status "done" → percakapan selesai
     """
+    # Ambil cookies dari request dan ubah menjadi dictionary
+    user_cookies = dict(request.cookies)
+    
     thread_id = body.thread_id or str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
-
+    
     try:
         async for step_update in graph.astream(
-            _chat_input(body, thread_id, authorization),
+            _chat_input(body, thread_id, user_cookies), # Teruskan cookies
             config=config,
             stream_mode="updates",
         ):
@@ -197,6 +194,7 @@ async def chat(
     except Exception as e:
         traceback.print_exc()  # ⬅️ ini penting
         raise HTTPException(status_code=500, detail=str(e))
+    
     state = await graph.aget_state(config)
     is_waiting = bool(state.next)
 
@@ -218,15 +216,18 @@ async def chat(
 
 @router.post("/stream")
 async def chat_stream(
+    request: Request, # Tambahkan Request untuk ambil cookies
     body: ChatRequest,
     graph=Depends(get_graph),
-    authorization: str | None = Header(default=None, alias="Authorization"),
 ):
+    # Ambil cookies dari request dan ubah menjadi dictionary
+    user_cookies = dict(request.cookies)
+    
     thread_id = body.thread_id or str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
 
     return StreamingResponse(
-        _stream_chat_events(graph, config, thread_id, body, authorization),
+        _stream_chat_events(graph, config, thread_id, body, user_cookies), # Teruskan cookies
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

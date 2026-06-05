@@ -103,6 +103,22 @@ function extractText(data: string): string {
   }
 }
 
+function getDeltaText(previous: string, incoming: string): string {
+  if (!incoming) return "";
+  if (!previous) return incoming;
+  if (incoming.startsWith(previous)) return incoming.slice(previous.length);
+  if (previous.startsWith(incoming)) return "";
+
+  const maxOverlap = Math.min(previous.length, incoming.length);
+  for (let overlap = maxOverlap; overlap > 0; overlap -= 1) {
+    if (previous.slice(-overlap) === incoming.slice(0, overlap)) {
+      return incoming.slice(overlap);
+    }
+  }
+
+  return incoming;
+}
+
 /**
  * Extract thread_id dari data SSE event agent_step.
  * Format: { "thread_id": "...", "update": { ... } }
@@ -178,6 +194,7 @@ export async function POST(req: NextRequest) {
   const decoder = new TextDecoder();
 
   let threadIdEmitted = false;
+  let lastAssistantText = "";
 
   const transformedStream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -198,6 +215,7 @@ export async function POST(req: NextRequest) {
 
             if (eventName === "agent_step") {
               controller.enqueue(encoder.encode(`\x00AGENT_STEP:${data}\x00`));
+              continue;
             }
 
             if (eventName === "execution_complete") {
@@ -218,9 +236,15 @@ export async function POST(req: NextRequest) {
               }
             }
 
-            const text = extractText(data);
-            if (text) {
-              controller.enqueue(encoder.encode(text));
+            if (eventName === "message") {
+              const text = extractText(data);
+              const delta = getDeltaText(lastAssistantText, text);
+              if (text) {
+                lastAssistantText = text;
+              }
+              if (delta) {
+                controller.enqueue(encoder.encode(delta));
+              }
             }
           }
         }
@@ -235,6 +259,19 @@ export async function POST(req: NextRequest) {
               encoder.encode(`\x00EXECUTION_COMPLETE:${data}\x00`),
             );
           } else {
+            if (eventName === "agent_step") {
+              controller.enqueue(encoder.encode(`\x00AGENT_STEP:${data}\x00`));
+            } else if (eventName === "message") {
+              const text = extractText(data);
+              const delta = getDeltaText(lastAssistantText, text);
+              if (text) {
+                lastAssistantText = text;
+              }
+              if (delta) {
+                controller.enqueue(encoder.encode(delta));
+              }
+            }
+
             if (!threadIdEmitted) {
               const threadId = extractThreadId(data);
               if (threadId) {
@@ -243,10 +280,6 @@ export async function POST(req: NextRequest) {
                 );
                 threadIdEmitted = true;
               }
-            }
-            const text = extractText(data);
-            if (text) {
-              controller.enqueue(encoder.encode(text));
             }
           }
         }
