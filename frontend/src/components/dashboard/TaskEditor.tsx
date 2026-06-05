@@ -8,7 +8,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import React, { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, useState } from "react";
 import type { TaskData } from "./resultStateTypes";
 
 interface TaskEditorProps {

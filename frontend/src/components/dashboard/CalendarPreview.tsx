@@ -8,13 +8,26 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Blueprint } from "./resultStateTypes";
-import { DEFAULT_TASK } from "./resultStateUtils";
 
 interface CalendarPreviewProps {
   blueprints: Blueprint[];
   timeLabel: string;
   subtasks: string[];
   blueprintAvailable: boolean;
+}
+
+function parseDateSafely(dateStr: string): Date | null {
+  if (!dateStr) return null;
+
+  // Cek jika formatnya DD-MM-YYYY (e.g. 19-11-2026)
+  if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split("-");
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const date = new Date(dateStr);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export function CalendarPreview({
@@ -80,16 +93,20 @@ export function CalendarPreview({
               <CalendarDays size={18} className="text-slate-500" />
 
               <span className="font-medium text-slate-700">
-                {displayedData?.[0]?.specific_start_time?.date
-                  ? new Date(
-                      displayedData[0].specific_start_time.date,
-                    ).toLocaleDateString("id-ID", {
-                      weekday: "long",
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    })
-                  : "-"}
+                {(() => {
+                  const rawDateStr =
+                    displayedData?.[0]?.specific_start_time?.date;
+                  if (!rawDateStr) return "-";
+                  const parsed = parseDateSafely(rawDateStr);
+                  return parsed
+                    ? parsed.toLocaleDateString("id-ID", {
+                        weekday: "long",
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })
+                    : rawDateStr;
+                })()}
               </span>
             </div>
 

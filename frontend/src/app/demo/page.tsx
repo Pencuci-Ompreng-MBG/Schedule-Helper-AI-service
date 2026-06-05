@@ -8,9 +8,9 @@ import { ChatState } from "@/components/dashboard/ChatState";
 import { StartState } from "@/components/dashboard/StartState";
 import { SubmittingState } from "@/components/dashboard/SubmittingState";
 import { SuccessState } from "@/components/dashboard/SuccessState";
-import { getAuthCookieToken } from "@/lib/auth";
 import { useDemoChat } from "@/hooks/useDemoChat";
 import { useSchedule } from "@/hooks/useSchedule";
+import { getAuthCookieToken } from "@/lib/auth";
 import { authService } from "@/services/authService";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -71,7 +71,7 @@ function DemoClient() {
       try {
         await authService.login(demoEmail, demoPassword);
         console.log("Demo user logged in successfully.");
-      } catch (e) {
+      } catch (_e) {
         try {
           await authService.register(demoName, demoEmail, demoPassword);
           console.log("Demo user registered and logged in successfully.");
@@ -289,16 +289,6 @@ function DemoClient() {
             messagesEndRef={messagesEndRef}
             hitlPayload={hitlPayload}
             scheduleItems={scheduleItems}
-            setScheduleItems={setScheduleItems}
-            isEditingSchedule={isEditingSchedule}
-            setIsEditingSchedule={setIsEditingSchedule}
-            setIsResult={setIsResult}
-            setIsAnalyzing={setIsResult}
-            prioritizerTasks={
-              hitlPayload?.type === "task_review"
-                ? hitlPayload.tasks
-                : undefined
-            }
             footerOverride={isLimitReached ? limitReachedFooter : undefined}
           />
         )}

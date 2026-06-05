@@ -1,17 +1,16 @@
-import { timeoutsManager } from "next/dist/server/web/sandbox/resource-managers";
 import type { ScheduleItem } from "@/types";
 import type { Blueprint, TaskData } from "./resultStateTypes";
 
 export const DEFAULT_TASK: TaskData = {
   title: "Untitled Task",
   estimated_minutes: 30,
-  deadline: { date: "17-05-2026", time: "00:00" },
+  deadline: { date: "2026-05-17", time: "00:00" },
   preferred_window: "bebas",
   priority: 3,
   category: "general",
   isSpecificTime: false,
   specific_start_time: {
-    date: "28-01-2004",
+    date: "2004-01-28",
     time: "19:00",
   },
 };
@@ -33,7 +32,7 @@ export const mapScheduleItemsToBlueprints = (
     category: item.category ?? "general",
     isSpecificTime: item.is_locked_time ?? false,
     specific_start_time: {
-      date: item.start_time?.split("T")[0] ?? "17-05-2026",
+      date: item.start_time?.split("T")[0] ?? "2026-05-17",
       time: item.start_time?.split("T")[1] ?? item.locked_start_time ?? "19:00",
     },
     time: item.time || "Belum dijadwalkan",

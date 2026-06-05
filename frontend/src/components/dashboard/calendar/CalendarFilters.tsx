@@ -38,7 +38,7 @@ export function CalendarFilters({
   onCompletionChange,
   onSearchChange,
 }: CalendarFiltersProps) {
-  const [isMounted, setIsMounted] = useState(false);
+  const [_isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -52,7 +52,8 @@ export function CalendarFilters({
             Filter & pencarian
           </p>
           <p className="text-[12px] text-[#717182]">
-            Cari task, pilih kategori, dan tampilkan status selesai secara cepat.
+            Cari task, pilih kategori, dan tampilkan status selesai secara
+            cepat.
           </p>
         </div>
 
@@ -81,7 +82,7 @@ export function CalendarFilters({
             <select
               value={selectedCategory}
               onChange={(event) => onCategoryChange(event.target.value)}
-              disabled={isMounted && isCategoriesLoading}
+              disabled={isCategoriesLoading}
               className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition-colors focus:border-[#8A38F5] disabled:cursor-not-allowed disabled:bg-gray-50"
             >
               <option value="all">Semua kategori</option>

@@ -9,8 +9,7 @@ import { SuccessState } from "@/components/dashboard/SuccessState";
 import { type ResumeData, useChat } from "@/hooks/useChat";
 import { useSchedule } from "@/hooks/useSchedule";
 import { useUser } from "@/hooks/useUser";
-import { CreateCalendarPayload, type QuestionnairePayload } from "@/types";
-import { API_URL } from "@/utils/const";
+import type { QuestionnairePayload } from "@/types";
 
 const formatTimeRange = (startTime: string, durationMinutes: number) => {
   let hours: number | null = null;
@@ -60,6 +59,7 @@ export default function DashboardClient() {
     isSchedulingDone,
     scheduledEventCount,
     isStarted,
+    isLoadingThread,
     messagesEndRef,
     handleSend,
     hitlPayload,
@@ -139,7 +139,8 @@ export default function DashboardClient() {
   ) => {
     const isApprove =
       resumeData && "approved" in resumeData && resumeData.approved === true;
-    const isTaskReviewApprove = isApprove && hitlPayload?.type === "task_review";
+    const isTaskReviewApprove =
+      isApprove && hitlPayload?.type === "task_review";
 
     if (isTaskReviewApprove) {
       setIsSubmittingToCalendar(true);
@@ -155,6 +156,15 @@ export default function DashboardClient() {
       }
     }
   };
+
+  if (isLoadingThread) {
+    return (
+      <AnalyzingState
+        title="Memuat Riwayat Obrolan"
+        description="Sedang mengambil percakapan Anda dari server..."
+      />
+    );
+  }
 
   if (isAnalyzing) {
     return <AnalyzingState />;
@@ -203,14 +213,6 @@ export default function DashboardClient() {
       messagesEndRef={messagesEndRef}
       hitlPayload={hitlPayload}
       scheduleItems={scheduleItems}
-      setScheduleItems={setScheduleItems}
-      isEditingSchedule={isEditingSchedule}
-      setIsEditingSchedule={setIsEditingSchedule}
-      setIsResult={setIsResult}
-      setIsAnalyzing={setIsResult}
-      prioritizerTasks={
-        hitlPayload?.type === "task_review" ? hitlPayload.tasks : undefined
-      }
     />
   );
 }

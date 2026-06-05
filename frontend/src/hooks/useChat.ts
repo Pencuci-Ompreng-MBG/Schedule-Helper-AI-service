@@ -13,20 +13,13 @@ import { clearConversationStorage } from "@/lib/auth";
 import { proxyApiFetch } from "@/lib/proxyApiFetch";
 import type { Message, QuestionnairePayload, RawTasks } from "@/types";
 import { buildUserContent } from "@/utils/chatPayload";
-import { API_URL } from "@/utils/const";
 
-const THREAD_ID_PATTERN = new RegExp("\\u0000THREAD_ID:([^\\u0000]+)\\u0000");
-const EXECUTION_COMPLETE_PATTERN = new RegExp(
-  "\\u0000EXECUTION_COMPLETE:([\\s\\S]+?)\\u0000",
-);
-const AGENT_STEP_PATTERN = new RegExp(
-  "\\u0000AGENT_STEP:([\\s\\S]+?)\\u0000",
-);
+const THREAD_ID_PATTERN = /\u0000THREAD_ID:([^\u0000]+)\u0000/;
+const EXECUTION_COMPLETE_PATTERN = /\u0000EXECUTION_COMPLETE:([\s\S]+?)\u0000/;
+const AGENT_STEP_PATTERN = /\u0000AGENT_STEP:([\s\S]+?)\u0000/;
 
-const CONTROL_TOKEN_PATTERN = new RegExp(
-  "\\u0000(?:THREAD_ID|EXECUTION_COMPLETE|AGENT_STEP):[\\s\\S]*?\\u0000",
-  "g",
-);
+const CONTROL_TOKEN_PATTERN =
+  /\u0000(?:THREAD_ID|EXECUTION_COMPLETE|AGENT_STEP):[\s\S]*?\u0000/g;
 // Fallback pattern jika backend membocorkan JSON ini langsung ke dalam text stream biasa
 // (tanpa event khusus dari route.ts / tanpa prefix \x00)
 const LEAKED_EXEC_PATTERN = /EXECUTION_COMPLETE:(\{[\s\S]*?\})/g;
@@ -84,6 +77,7 @@ export function useChat(userEmail?: string) {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStarted, setIsStarted] = useState(false);
+  const [isLoadingThread, setIsLoadingThread] = useState(false);
   const [hitlPayload, setHitlPayload] = useState<HitlPayload | null>(null);
   const [currentAgentStep, setCurrentAgentStep] = useState<string | null>(null);
   const [isSchedulingDone, setIsSchedulingDone] = useState(false);
@@ -125,10 +119,12 @@ export function useChat(userEmail?: string) {
       clearConversationStorage();
       setMessages([]);
       setIsStarted(false);
+      setIsLoadingThread(false);
       return;
     }
 
     const loadThread = async () => {
+      setIsLoadingThread(true);
       try {
         const response = await proxyApiFetch(`/agent/${current}`, {
           method: "GET",
@@ -156,7 +152,9 @@ export function useChat(userEmail?: string) {
           const formattedMessages: Message[] = messages
             .filter((msg) => msg?.content?.trim() !== "")
             .map((msg) => ({
-              role: msg.role || "system",
+              role: (msg.role === "user" ? "user" : "system") as
+                | "user"
+                | "system",
               content: msg.content,
             }));
 
@@ -170,6 +168,16 @@ export function useChat(userEmail?: string) {
         }
       } catch (error) {
         console.error("Gagal mengambil thread:", error);
+        setMessages([
+          {
+            role: "system",
+            content:
+              "⚠️ **Gagal memuat riwayat obrolan.**\n\nLayanan AI atau database sedang mengalami gangguan (offline) saat ini di server ter-deploy. Silakan segarkan halaman kembali beberapa saat lagi atau buat sesi chat baru.",
+          },
+        ]);
+        setIsStarted(true);
+      } finally {
+        setIsLoadingThread(false);
       }
     };
 
@@ -257,7 +265,10 @@ export function useChat(userEmail?: string) {
             } else if (execData.status === "done") {
               setIsSchedulingDone(true);
               // Coba gunakan api_payload dari backend jika tersedia
-              if (execData.api_payload && execData.api_payload.scheduled_count !== undefined) {
+              if (
+                execData.api_payload &&
+                execData.api_payload.scheduled_count !== undefined
+              ) {
                 setScheduledEventCount(execData.api_payload.scheduled_count);
               }
               setHitlPayload((prev) => {
@@ -300,7 +311,7 @@ export function useChat(userEmail?: string) {
         return replacementText;
       });
 
-      combined = combined.replace(LEAKED_EXEC_PATTERN, (match, jsonString) => {
+      combined = combined.replace(LEAKED_EXEC_PATTERN, (_match, jsonString) => {
         try {
           const execData = JSON.parse(jsonString) as ExecutionComplete;
           if (execData.next_node && execData.next_node.length > 0) {
@@ -312,7 +323,10 @@ export function useChat(userEmail?: string) {
           if (execData.status === "waiting_hitl" && execData.hitl_payload) {
             setHitlPayload(execData.hitl_payload);
 
-            if (execData.hitl_payload.message && accumulated.includes(execData.hitl_payload.message)) {
+            if (
+              execData.hitl_payload.message &&
+              accumulated.includes(execData.hitl_payload.message)
+            ) {
               return "";
             }
             return execData.hitl_payload.message || "";
@@ -387,12 +401,16 @@ export function useChat(userEmail?: string) {
   const executeChatStream = async (userContent: string, streamPayload: any) => {
     // 1. Reset UI & Preparation
     // Simpan dulu jumlah event yang akan dijadwalkan dari state hitlPayload saat ini
-    if (hitlPayload && "proposed_schedule" in hitlPayload && hitlPayload.proposed_schedule) {
+    if (
+      hitlPayload &&
+      "proposed_schedule" in hitlPayload &&
+      hitlPayload.proposed_schedule
+    ) {
       setScheduledEventCount(hitlPayload.proposed_schedule.length);
     } else {
       setScheduledEventCount(0);
     }
-    
+
     setHitlPayload(null);
     setCurrentAgentStep(null);
     setIsSchedulingDone(false);
@@ -502,6 +520,7 @@ export function useChat(userEmail?: string) {
     isSchedulingDone,
     scheduledEventCount,
     isStarted,
+    isLoadingThread,
     messagesEndRef,
     hitlPayload,
     handleSend,

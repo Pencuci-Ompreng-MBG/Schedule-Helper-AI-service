@@ -1,13 +1,6 @@
 import { ChevronRight, Folder, X } from "lucide-react";
-import {
-  type Dispatch,
-  type FormEvent,
-  type SetStateAction,
-  useEffect,
-  useState,
-} from "react";
-import ReactMarkdown from "react-markdown";
-import type { HitlPayload, PrioritizerTask, ResumeData } from "@/hooks/useChat";
+import { type FormEvent, useEffect, useState } from "react";
+import type { HitlPayload, ResumeData } from "@/hooks/useChat";
 import type { Message, RawTasks, ScheduleItem } from "@/types";
 import { AgentStepIndicator } from "./AgentStepIndicator";
 import { ChatInput } from "./ChatInput";
@@ -34,13 +27,6 @@ interface ChatStateProps {
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   hitlPayload: HitlPayload | null;
   scheduleItems: ScheduleItem[];
-  // Props di bawah ini bisa Anda hapus juga dari interface parent jika memang sudah tidak dipakai sama sekali di level atas
-  setScheduleItems: Dispatch<SetStateAction<ScheduleItem[]>>;
-  isEditingSchedule: boolean;
-  setIsEditingSchedule: Dispatch<SetStateAction<boolean>>;
-  setIsResult: Dispatch<SetStateAction<boolean>>;
-  setIsAnalyzing: Dispatch<SetStateAction<boolean>>;
-  prioritizerTasks: PrioritizerTask[] | undefined;
   footerOverride?: React.ReactNode;
 }
 
@@ -72,7 +58,7 @@ export function ChatState({
       console.error("Failed to parse raw_tasks:", error);
       setRawTasks(null);
     }
-  }, [messages, isTyping, messagesEndRef]);
+  }, [messagesEndRef]);
 
   // Perbaikan bug logika (sebelumnya || "counselor_review" membuat nilainya selalu true)
   const isAwaitingApproval =
@@ -131,15 +117,16 @@ export function ChatState({
                           <AgentStepIndicator currentStep={currentAgentStep} />
                           <TypingIndicator />
                         </div>
-                      ) : isLastIndex && (hitlPayload?.type === "counselor_chat" ||
-                        hitlPayload?.type === "counselor_review") ? (
-                        <ChatMessage 
+                      ) : isLastIndex &&
+                        (hitlPayload?.type === "counselor_chat" ||
+                          hitlPayload?.type === "counselor_review") ? (
+                        <ChatMessage
                           message={{
                             ...msg,
                             content: msg.content.includes(hitlPayload.message)
                               ? msg.content
-                              : msg.content + "\n\n" + hitlPayload.message
-                          }} 
+                              : `${msg.content}\n\n${hitlPayload.message}`,
+                          }}
                         />
                       ) : (
                         <ChatMessage message={msg} />

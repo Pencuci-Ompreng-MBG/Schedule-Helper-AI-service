@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface SliderWithTooltipProps {
   value: number;
@@ -73,9 +73,30 @@ export function QuestionnaireCard({
     "More than 6 Hours",
   ];
 
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen, setIsDropdownOpen]);
 
   const isSubmitDisabled = !isMounted || !availableTime;
 
@@ -140,7 +161,7 @@ export function QuestionnaireCard({
       </div>
 
       {/* Available Time */}
-      <div className="mb-8 relative">
+      <div className="mb-8 relative" ref={dropdownRef}>
         <label className="text-[14px] text-[#717182] font-medium block mb-3 font-inter">
           Available Time Today
         </label>

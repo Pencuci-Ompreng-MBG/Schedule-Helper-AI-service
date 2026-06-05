@@ -45,23 +45,20 @@ export default function HistoryPage() {
       <div className="flex-1 overflow-y-auto px-8 pb-10">
         <div className="w-full flex flex-col gap-4">
           {/* Skeleton Loader */}
-          {isLoading && (
-            <>
-              {[1, 2, 3].map((skeleton) => (
-                <div
-                  key={skeleton}
-                  className="w-full bg-white border border-[#F3F4F6] rounded-[16px] h-[124px] animate-pulse flex flex-col justify-center px-6 py-5 gap-3 shadow-sm"
-                >
-                  <div className="flex justify-between items-center w-full">
-                    <div className="h-5 bg-gray-200 rounded w-1/3"></div>
-                    <div className="h-7 bg-[#D3C1FF]/40 rounded-full w-24"></div>
-                  </div>
-                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/4 mt-2"></div>
+          {isLoading &&
+            [1, 2, 3].map((skeleton) => (
+              <div
+                key={skeleton}
+                className="w-full bg-white border border-[#F3F4F6] rounded-[16px] h-[124px] animate-pulse flex flex-col justify-center px-6 py-5 gap-3 shadow-sm"
+              >
+                <div className="flex justify-between items-center w-full">
+                  <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-7 bg-[#D3C1FF]/40 rounded-full w-24"></div>
                 </div>
-              ))}
-            </>
-          )}
+                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/4 mt-2"></div>
+              </div>
+            ))}
 
           {/* Error State */}
           {!isLoading && error && (

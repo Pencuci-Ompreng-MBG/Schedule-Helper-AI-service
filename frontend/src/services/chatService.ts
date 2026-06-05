@@ -10,7 +10,7 @@ export const chatService = {
    * Mengirim pesan user ke AI dan mendapatkan respons.
    * === INTEGRASI BE: Ganti dengan POST /api/chat/send ===
    */
-  async sendMessage(message: string, history: Message[]): Promise<Message> {
+  async sendMessage(_message: string, history: Message[]): Promise<Message> {
     // 1. Simulasi delay network
     await new Promise((resolve) => setTimeout(resolve, 1500));
 

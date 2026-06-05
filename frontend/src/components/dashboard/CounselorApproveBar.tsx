@@ -13,10 +13,10 @@ export function CounselorApproveBar({
   onApprove,
   onReject,
 }: CounselorApproveBarProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(payload.draft);
+  const [_isEditing, setIsEditing] = useState(false);
+  const [_draft, setDraft] = useState(payload.draft);
 
-  const handleCancelEdit = () => {
+  const _handleCancelEdit = () => {
     setDraft(payload.draft);
     setIsEditing(false);
   };

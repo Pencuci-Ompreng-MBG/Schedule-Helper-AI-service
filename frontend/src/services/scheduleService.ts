@@ -1,12 +1,11 @@
+import { proxyApiFetch } from "@/lib/proxyApiFetch";
 import type {
-  CalendarTask,
   CalendarTaskListResponse,
   CalendarTaskQuery,
   HistoryItem,
   QuestionnairePayload,
   ScheduleItem,
 } from "@/types";
-import { proxyApiFetch } from "@/lib/proxyApiFetch";
 
 // =============================================================
 // SCHEDULE SERVICE: Mengelola pembuatan jadwal dan riwayat
@@ -53,10 +52,12 @@ function extractUserMessage(content: string): string {
  */
 function mapSessionToHistoryItem(session: BackendSession): HistoryItem {
   const firstUserMessage = session.messages.find((m) => m.role === "user");
-  const rawContent = firstUserMessage?.content ?? "";
+  const fallbackMessage = session.messages[0];
+  const rawContent =
+    firstUserMessage?.content ?? fallbackMessage?.content ?? "";
   const extracted = rawContent
     ? extractUserMessage(rawContent)
-    : (session.latestIntent ?? "Untitled Session");
+    : (session.latestIntent ?? "Sesi Obrolan Baru");
 
   const title =
     extracted.length > 80 ? `${extracted.slice(0, 77)}...` : extracted;
@@ -184,7 +185,9 @@ export const scheduleService = {
    * Mengambil daftar tugas/jadwal yang terintegrasi dengan kalender.
    * Terintegrasi dengan GET /api/calendar
    */
-  async getCalendarTasks(params?: CalendarTaskQuery): Promise<CalendarTaskListResponse> {
+  async getCalendarTasks(
+    params?: CalendarTaskQuery,
+  ): Promise<CalendarTaskListResponse> {
     const queryString = scheduleService.buildCalendarQueryString(params);
     const response = await proxyApiFetch(
       `/calendar${queryString ? `?${queryString}` : ""}`,
@@ -236,7 +239,9 @@ export const scheduleService = {
    * Memicu sinkronisasi manual lalu mengambil ulang data kalender.
    * Terintegrasi dengan POST /api/calendar/sync
    */
-  async syncCalendarTasks(params?: CalendarTaskQuery): Promise<CalendarTaskListResponse> {
+  async syncCalendarTasks(
+    params?: CalendarTaskQuery,
+  ): Promise<CalendarTaskListResponse> {
     const queryString = scheduleService.buildCalendarQueryString(params);
     const response = await proxyApiFetch(
       `/calendar/sync${queryString ? `?${queryString}` : ""}`,

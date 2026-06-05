@@ -27,6 +27,7 @@ export default function CalendarPage() {
     isSyncing,
     syncSuccess,
     error,
+    hasMore,
     totalCount,
     loadMoreRef,
     handleSync,
@@ -36,12 +37,14 @@ export default function CalendarPage() {
   } = useCalendarTasks();
 
   const [iframeKey, setIframeKey] = useState(0);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [_iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeTimeout, setIframeTimeout] = useState(false);
+  const iframeLoadedRef = useRef(false);
   const loadTimer = useRef<number | null>(null);
 
   useEffect(() => {
     setIframeLoaded(false);
+    iframeLoadedRef.current = false;
     setIframeTimeout(false);
 
     if (loadTimer.current) {
@@ -50,7 +53,7 @@ export default function CalendarPage() {
     }
 
     loadTimer.current = window.setTimeout(() => {
-      if (!iframeLoaded) {
+      if (!iframeLoadedRef.current) {
         setIframeTimeout(true);
       }
     }, 5000);
@@ -95,7 +98,7 @@ export default function CalendarPage() {
             isLoadingMore={isLoadingMore}
             isCategoriesLoading={isCategoriesLoading}
             error={error}
-            hasMore={loadMoreRef ? true : false}
+            hasMore={hasMore}
             onCategoryChange={setSelectedCategory}
             onCompletionChange={setCompletionFilter}
             onSearchChange={setSearchInput}
@@ -147,6 +150,7 @@ export default function CalendarPage() {
                   scrolling="no"
                   onLoad={() => {
                     setIframeLoaded(true);
+                    iframeLoadedRef.current = true;
                     setIframeTimeout(false);
 
                     if (loadTimer.current) {
@@ -162,7 +166,9 @@ export default function CalendarPage() {
                       Tidak dapat memuat Google Calendar
                     </div>
                     <p className="text-sm text-[#717182] max-w-md">
-                      Google Calendar tidak tampil karena Anda belum login ke akun Google di browser ini, kalender bersifat privat, atau browser memblokir cookie lintas-site.
+                      Google Calendar tidak tampil karena Anda belum login ke
+                      akun Google di browser ini, kalender bersifat privat, atau
+                      browser memblokir cookie lintas-site.
                     </p>
                     <div className="flex flex-wrap gap-3 justify-center">
                       <button
@@ -173,7 +179,10 @@ export default function CalendarPage() {
                       </button>
                       <button
                         onClick={() => {
-                          const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api").replace(/\/api$/, "");
+                          const apiBase = (
+                            process.env.NEXT_PUBLIC_API_URL ||
+                            "http://localhost:3000/api"
+                          ).replace(/\/api$/, "");
                           window.location.href = `${apiBase}/auth/google`;
                         }}
                         className="px-4 py-2 bg-[#8A38F5] text-white rounded-xl text-sm font-semibold hover:bg-[#7021dc]"
@@ -194,7 +203,12 @@ export default function CalendarPage() {
               <div className="p-4 bg-[#F9FAFB] rounded-2xl border border-gray-100 flex items-start gap-3">
                 <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-[#717182] leading-relaxed">
-                  <strong>Penting:</strong> Pastikan Anda telah login ke akun Google (<strong>{userEmail}</strong>) di browser ini agar Google Calendar dapat ter-render dengan benar. Apabila kalender tidak muncul, silakan klik tombol <em>Buka Google Calendar</em> di atas untuk melakukan otentikasi.
+                  <strong>Penting:</strong> Pastikan Anda telah login ke akun
+                  Google (<strong>{userEmail}</strong>) di browser ini agar
+                  Google Calendar dapat ter-render dengan benar. Apabila
+                  kalender tidak muncul, silakan klik tombol{" "}
+                  <em>Buka Google Calendar</em> di atas untuk melakukan
+                  otentikasi.
                 </p>
               </div>
 

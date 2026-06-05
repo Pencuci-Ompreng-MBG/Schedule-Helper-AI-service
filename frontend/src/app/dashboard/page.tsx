@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense } from "react";
 import DashboardClient from "./DashboardClient";
 
 function DashboardFallback() {
@@ -13,7 +13,7 @@ function DashboardFallback() {
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
+  const _router = useRouter();
 
   // useEffect(() => {
   //   const token = sessionStorage.getItem("app_token");

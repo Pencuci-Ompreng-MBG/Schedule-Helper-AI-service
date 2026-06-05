@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { defaultScheduleItems } from "@/data/mockData";
-import { scheduleService } from "@/services/scheduleService";
-import { QuestionnairePayload, type ScheduleItem } from "@/types";
+import type { ScheduleItem } from "@/types";
 
 /**
  * Hook untuk mengelola state kuesioner dan hasil pembuatan jadwal.
@@ -11,7 +10,7 @@ export function useSchedule() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Status States
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAnalyzing, _setIsAnalyzing] = useState(false);
   const [isResult, setIsResult] = useState(false);
   const [isEditingSchedule, setIsEditingSchedule] = useState(false);
   const [isSubmittingToCalendar, setIsSubmittingToCalendar] = useState(false);

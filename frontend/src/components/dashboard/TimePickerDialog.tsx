@@ -132,11 +132,20 @@ export function TimePickerDialog({
       </div>
 
       <DialogActions
-        sx={{ padding: "8px 24px 20px 24px", justifyContent: "flex-end", gap: 1 }}
+        sx={{
+          padding: "8px 24px 20px 24px",
+          justifyContent: "flex-end",
+          gap: 1,
+        }}
       >
         <Button
           onClick={onClose}
-          sx={{ color: "#e45a55", fontWeight: "bold", fontSize: "14px", padding: "6px 16px" }}
+          sx={{
+            color: "#e45a55",
+            fontWeight: "bold",
+            fontSize: "14px",
+            padding: "6px 16px",
+          }}
         >
           CLOSE
         </Button>

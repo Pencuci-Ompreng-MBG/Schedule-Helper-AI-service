@@ -22,7 +22,7 @@ export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
 
   const [selectedBlueprintId, setSelectedBlueprintId] = useState("");
 
-  const [popUpMsg, setPopUpMsg] = useState("");
+  const [_popUpMsg, _setPopUpMsg] = useState("");
 
   const selectedBlueprint =
     blueprints.find((b) => b.id === selectedBlueprintId) || blueprints[0];
@@ -30,7 +30,9 @@ export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
   const [taskData, setTaskData] = useState<TaskData>(DEFAULT_TASK);
 
   const onConfirm = () => {
-    window.alert(`Are you sure u want to ${popUpMsg}`);
+    return window.confirm(
+      "Apakah Anda yakin ingin menghapus blueprint tugas ini?",
+    );
   };
 
   useEffect(() => {
@@ -151,7 +153,7 @@ export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
       category: "general",
       isSpecificTime: false,
       specific_start_time: {
-        date: "19-11-2026",
+        date: "2026-11-19",
         time: "19:00",
       },
       time: "Belum dijadwalkan",

@@ -84,8 +84,22 @@ export function CalendarTaskList({
   updatingTaskId,
   loadMoreRef,
 }: CalendarTaskListProps) {
-  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
-  const [subtaskStatus, setSubtaskStatus] = useState<Record<string, boolean>>({});
+  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [subtaskStatus, setSubtaskStatus] = useState<Record<string, boolean>>(
+    () => {
+      if (typeof window !== "undefined") {
+        try {
+          const saved = localStorage.getItem("subtask_status");
+          return saved ? JSON.parse(saved) : {};
+        } catch {
+          return {};
+        }
+      }
+      return {};
+    },
+  );
 
   useEffect(() => {
     const visibleTaskIds = new Set(tasks.map((task) => task.id));
@@ -95,17 +109,6 @@ export function CalendarTaskList({
       for (const [taskId, value] of Object.entries(prev)) {
         if (visibleTaskIds.has(taskId)) {
           nextState[taskId] = value;
-        }
-      }
-      return nextState;
-    });
-
-    setSubtaskStatus((prev) => {
-      const nextState: Record<string, boolean> = {};
-      for (const [key, value] of Object.entries(prev)) {
-        const taskId = key.split("-")[0];
-        if (visibleTaskIds.has(taskId)) {
-          nextState[key] = value;
         }
       }
       return nextState;
@@ -121,10 +124,18 @@ export function CalendarTaskList({
 
   const handleToggleSubtask = (taskId: string, index: number) => {
     const key = `${taskId}-${index}`;
-    setSubtaskStatus((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    setSubtaskStatus((prev) => {
+      const updated = {
+        ...prev,
+        [key]: !prev[key],
+      };
+      try {
+        localStorage.setItem("subtask_status", JSON.stringify(updated));
+      } catch (e) {
+        console.error("Gagal menyimpan subtask_status ke localStorage:", e);
+      }
+      return updated;
+    });
   };
 
   const isSubtaskCompleted = (taskId: string, index: number) => {

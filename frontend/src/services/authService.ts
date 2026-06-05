@@ -1,13 +1,13 @@
-import type { UserProfile } from "@/types";
-import { API_URL } from "@/utils/const";
+import { apiFetch } from "@/lib/apiFetch";
 import {
   clearAuthSession,
   clearConversationStorage,
   saveUserToSession,
   setAuthCookieToken,
 } from "@/lib/auth";
-import { apiFetch } from "@/lib/apiFetch";
 import { proxyApiFetch } from "@/lib/proxyApiFetch";
+import type { UserProfile } from "@/types";
+import { API_URL } from "@/utils/const";
 
 export const authService = {
   /**
@@ -116,7 +116,9 @@ export const authService = {
    * Menangani redirect OAuth (Google/etc).
    */
   async oauth(provider: string = "google"): Promise<void> {
-    const response = await fetch(`${API_URL}/auth/${provider}`, { credentials: "include" });
+    const response = await fetch(`${API_URL}/auth/${provider}`, {
+      credentials: "include",
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

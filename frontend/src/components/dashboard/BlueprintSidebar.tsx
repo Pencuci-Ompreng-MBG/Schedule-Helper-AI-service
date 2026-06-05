@@ -1,5 +1,4 @@
-import { FileText, MoreVertical, Plus, Trash2Icon } from "lucide-react";
-import { useState } from "react";
+import { FileText, Plus, Trash2Icon } from "lucide-react";
 import type { Blueprint } from "./resultStateTypes";
 
 interface BlueprintSidebarProps {
@@ -8,7 +7,7 @@ interface BlueprintSidebarProps {
   onAdd: () => void;
   onSelect: (id: string) => void;
   onRemove: (id: number) => void;
-  onConfirm: () => void;
+  onConfirm: () => boolean;
 }
 
 export function BlueprintSidebar({
@@ -75,9 +74,11 @@ export function BlueprintSidebar({
                   <Trash2Icon
                     size={16}
                     className="text-slate-400 shrink-0 group-hover:text-white"
-                    onClick={() => {
-                      onConfirm();
-                      onRemove(index);
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onConfirm()) {
+                        onRemove(index);
+                      }
                     }}
                   />
                 </span>

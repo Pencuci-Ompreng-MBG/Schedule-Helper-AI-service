@@ -1,4 +1,4 @@
-import { ElementType, type FormEvent, JSX, type ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 
 interface ChatInputProps {
   value: string;

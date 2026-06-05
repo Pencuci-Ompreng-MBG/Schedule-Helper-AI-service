@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import type { ResumeData } from "@/hooks/useChat";
 import type { UserProfile } from "@/types";
-import { removeChatSession } from "@/utils/removeChatMsgs";
 import { QuestionnaireCard } from "./QuestionnaireCard";
 
 interface StartStateProps {

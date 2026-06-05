@@ -1,4 +1,12 @@
-export function AnalyzingState() {
+interface AnalyzingStateProps {
+  title?: string;
+  description?: string;
+}
+
+export function AnalyzingState({
+  title = "Analyzing Your Tasks",
+  description = "Prioritizing based on your context and available time...",
+}: AnalyzingStateProps) {
   return (
     <main className="flex-1 flex flex-col items-center justify-center h-full bg-[#FFFFFF] animate-in fade-in duration-500">
       <div className="flex flex-col items-center justify-center text-center">
@@ -8,11 +16,9 @@ export function AnalyzingState() {
           className="w-[64px] h-[64px] object-contain mb-6 animate-pulse"
         />
         <h2 className="text-[20px] font-bold text-[#0A0A0A] font-inter mb-2">
-          Analyzing Your Tasks
+          {title}
         </h2>
-        <p className="text-[14px] text-[#717182] font-inter">
-          Prioritizing based on your context and available time...
-        </p>
+        <p className="text-[14px] text-[#717182] font-inter">{description}</p>
       </div>
     </main>
   );

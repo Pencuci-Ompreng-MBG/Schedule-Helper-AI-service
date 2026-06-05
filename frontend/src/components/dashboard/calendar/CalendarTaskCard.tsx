@@ -218,7 +218,10 @@ export function CalendarTaskCard({
                 const completed = isSubtaskCompleted(task.id, index);
 
                 return (
-                  <div key={`${task.id}-${index}`} className="flex items-start gap-2.5 group">
+                  <div
+                    key={`${task.id}-${index}`}
+                    className="flex items-start gap-2.5 group"
+                  >
                     <button
                       onClick={() => onToggleSubtask(task.id, index)}
                       className={`mt-0.5 shrink-0 w-4 h-4 rounded-sm border flex items-center justify-center transition-colors cursor-pointer ${
@@ -231,7 +234,9 @@ export function CalendarTaskCard({
                     </button>
                     <span
                       className={`text-[13px] leading-normal transition-colors cursor-pointer select-none ${
-                        completed ? "text-gray-400 line-through" : "text-slate-700"
+                        completed
+                          ? "text-gray-400 line-through"
+                          : "text-slate-700"
                       }`}
                       onClick={() => onToggleSubtask(task.id, index)}
                     >

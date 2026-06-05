@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { scheduleService } from "@/services/scheduleService";
 import type {
   CalendarCompletionFilter,
   CalendarTask,
   CalendarTaskListResponse,
 } from "@/types";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 const PAGE_SIZE = 8;
 const SEARCH_DEBOUNCE_MS = 350;
@@ -32,7 +32,8 @@ export function useCalendarTasks() {
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [completionFilter, setCompletionFilter] = useState<CalendarCompletionFilter>("all");
+  const [completionFilter, setCompletionFilter] =
+    useState<CalendarCompletionFilter>("all");
   const [searchInput, setSearchInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -87,7 +88,9 @@ export function useCalendarTasks() {
           return;
         }
 
-        setTasks((prev) => (replace ? response.items : [...prev, ...response.items]));
+        setTasks((prev) =>
+          replace ? response.items : [...prev, ...response.items],
+        );
         setCurrentPage(page);
         setHasMore(response.pagination.hasMore);
         setTotalCount(response.pagination.total);
@@ -194,7 +197,8 @@ export function useCalendarTasks() {
         return;
       }
 
-      const newStatus = currentStatus === "completed" ? "scheduled" : "completed";
+      const newStatus =
+        currentStatus === "completed" ? "scheduled" : "completed";
       setUpdatingTaskId(taskId);
 
       try {

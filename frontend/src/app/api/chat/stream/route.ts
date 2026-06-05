@@ -181,7 +181,11 @@ export async function POST(req: NextRequest) {
 
   const transformedStream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const reader = response.body!.getReader();
+      const reader = response.body?.getReader();
+      if (!reader) {
+        controller.close();
+        return;
+      }
       let buffer = "";
 
       try {

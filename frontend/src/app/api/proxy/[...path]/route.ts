@@ -25,7 +25,8 @@ async function proxyToBackend(
   const backendUrl = new URL(BACKEND_API_BASE);
   const backendPath = `/${pathSegments.map((segment) => encodeURIComponent(segment)).join("/")}`;
   backendUrl.pathname = `${backendUrl.pathname.replace(/\/$/, "")}${backendPath}`;
-  const requestUrl = "nextUrl" in req && req.nextUrl ? req.nextUrl : new URL(req.url);
+  const requestUrl =
+    "nextUrl" in req && req.nextUrl ? req.nextUrl : new URL(req.url);
   backendUrl.search = requestUrl.search;
 
   const headers = new Headers();
@@ -41,13 +42,14 @@ async function proxyToBackend(
 
   const cookieToken =
     "cookies" in req && req.cookies
-      ? req.cookies.get(AUTH_COOKIE_NAME)?.value ?? null
+      ? (req.cookies.get(AUTH_COOKIE_NAME)?.value ?? null)
       : getCookieFromHeader(req.headers.get("cookie"), AUTH_COOKIE_NAME);
   if (cookieToken) {
     headers.set("cookie", `${AUTH_COOKIE_NAME}=${cookieToken}`);
   }
 
-  const body = method === "GET" || method === "HEAD" ? undefined : await req.text();
+  const body =
+    method === "GET" || method === "HEAD" ? undefined : await req.text();
 
   const response = await fetch(backendUrl.toString(), {
     method,

@@ -1,6 +1,7 @@
 "use client";
 
 import { Calendar } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,7 +12,6 @@ import {
 import { useUser } from "@/hooks/useUser";
 import { chatService } from "@/services/chatService";
 import { removeChatSession } from "@/utils/removeChatMsgs";
-import Image from "next/image";
 
 /**
  * DASHBOARD LAYOUT
@@ -29,7 +29,7 @@ export default function DashboardLayout({
   const { user, isUserLoading, userInitial, logout } = useUser();
 
   // 2. Logika Sidebar (hasMessages menentukan apakah sidebar muncul)
-  const [hasMessages, setHasMessages] = useState(false);
+  const [_hasMessages, setHasMessages] = useState(false);
 
   useEffect(() => {
     const checkMessages = () => {
@@ -156,7 +156,7 @@ export default function DashboardLayout({
               </Link>
             </nav>
             {/* User Profile Section */}
-            <div className="p-4 border-t border-gray-100 self-end">
+            <div className="p-4 border-t border-gray-100 mt-auto">
               <div
                 onClick={() => router.push("/dashboard/profile")}
                 className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-200 cursor-pointer transition-colors"

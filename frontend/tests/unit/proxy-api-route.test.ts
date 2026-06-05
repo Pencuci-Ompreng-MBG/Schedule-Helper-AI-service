@@ -25,9 +25,12 @@ describe("proxy api route", () => {
       },
     });
 
-    const response = await GET(request as never, {
-      params: Promise.resolve({ path: ["users", "me"] }),
-    } as never);
+    const response = await GET(
+      request as never,
+      {
+        params: Promise.resolve({ path: ["users", "me"] }),
+      } as never,
+    );
 
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:3000/api/users/me",
