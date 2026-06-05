@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable 
   @typescript-eslint/no-unsafe-assignment,
   @typescript-eslint/no-unsafe-member-access
@@ -131,43 +132,61 @@ export class AgentController {
           }
         }
       });
+      let isDbSaved = false;
 
-      fastApiResponse.data.on('end', () => {
-        if (!sessionThreadId) return;
+      // Buat helper function agar bisa dipanggil dari 'end' atau 'close'
+      const saveToDatabase = async () => {
+        if (isDbSaved || !sessionThreadId) return;
+        isDbSaved = true; // Tandai agar tidak dipanggil 2 kali
 
         const payload: ChatDto = {
           ...cleanPayload,
           thread_id: sessionThreadId,
         };
 
-        console.log(`payload: ${JSON.stringify(payload)}`);
-
-        this.agentService
-          .upsertSession(
+        try {
+          await this.agentService.upsertSession(
             payload,
             userId,
             status,
             routerData?.current_intent,
             aiMessage,
-          )
-          .catch((err) =>
-            console.error('[Agent] upsertSession error:', err.message),
           );
 
-        if (routerData?.raw_tasks?.length) {
-          this.agentService
-            .upsertRawTask(userId, routerData.raw_tasks)
-            .catch((err) =>
-              console.error('[Agent] upsertRawTask error:', err.message),
-            );
+          if (routerData?.raw_tasks?.length) {
+            await this.agentService.upsertRawTask(userId, routerData.raw_tasks);
+          }
+        } catch (err) {
+          console.error(
+            '[Agent] Failed to save to NeonDB:',
+            err instanceof Error ? err.message : String(err),
+          );
+        }
+      };
+
+      fastApiResponse.data.on('end', async () => {
+        // 1. Tunggu Prisma selesai nge-save ke NeonDB
+        await saveToDatabase();
+
+        // 2. BARU matikan response. Vercel akan membekukan fungsi SETELAH baris ini.
+        if (!res.writableEnded) {
+          res.end();
         }
       });
 
-      req.on('close', () => {
+      req.on('close', async () => {
         fastApiResponse.data.destroy();
+        // Berjaga-jaga jika koneksi terputus di tengah jalan, tetap paksa save state terakhir
+        await saveToDatabase();
+
+        if (!res.writableEnded) {
+          res.end();
+        }
       });
 
-      fastApiResponse.data.pipe(res);
+      // Set { end: false } agar pipe tidak otomatis melakukan res.end()
+      // Ini memaksa Vercel menunggu instruksi res.end() manual kita di dalam event 'end'
+      fastApiResponse.data.pipe(res, { end: false });
 
       return res;
     } catch (error) {
