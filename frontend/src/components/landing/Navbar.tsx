@@ -6,9 +6,13 @@ import Link from "next/link";
 export function Navbar() {
   return (
     <header className="flex justify-between items-center px-6 md:px-12 lg:px-16 py-5 w-full">
-      <div className="text-[20px] font-bold text-[#0A0A0A]">
-        Schedule Helper
-      </div>
+      <Link href="/" className="block">
+        <img
+          src="/logo-with-title.svg"
+          alt="Schedule Helper Logo"
+          className="h-8 w-auto object-contain"
+        />
+      </Link>
       <div className="flex items-center gap-6">
         <Link
           href="/auth/login"
