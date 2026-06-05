@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -249,11 +249,12 @@ export function useChat(userEmail?: string) {
 
       combined = combined.replace(CONTROL_TOKEN_PATTERN, (token) => {
         let replacementText = "";
+        const threadMatch = AGENT_STEP_PATTERN.exec(token);
 
-        if (!threadIdCaptured) {
-          const threadMatch = THREAD_ID_PATTERN.exec(token);
-          if (threadMatch) {
-            setThreadIdInUrl(threadMatch[1]);
+        if (threadMatch && !threadIdCaptured) {
+          const json_match = JSON.parse(threadMatch[1]).thread_id;
+          if (json_match) {
+            setThreadIdInUrl(json_match);
             threadIdCaptured = true;
           }
         }
