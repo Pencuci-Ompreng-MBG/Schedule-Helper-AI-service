@@ -124,11 +124,11 @@ export function ChatState({
                 return (
                   <div key={index} className="flex flex-col gap-4">
                     {msg.role !== "system" && <ChatMessage message={msg} />}
-
+                    {isLastIndex && <AgentStepIndicator currentStep={currentAgentStep} />}
+                    
                     {msg.role === "system" &&
                       (isLastIndex && isTyping ? (
                         <div className="flex flex-col gap-3">
-                          <AgentStepIndicator currentStep={currentAgentStep} />
                           <TypingIndicator />
                         </div>
                       ) : isLastIndex && (hitlPayload?.type === "counselor_chat" ||
@@ -173,7 +173,7 @@ export function ChatState({
             value={inputValue}
             onChange={setInputValue}
             onSubmit={handleInputSubmit}
-            disabled={isTyping}
+            disabled={isTyping || hitlPayload?.type === "task_review"}
             placeholder={
               isAwaitingApproval
                 ? "Ketik di sini untuk menambah cerita..."

@@ -3,6 +3,7 @@
 import { Check, Loader2 } from "lucide-react";
 
 interface AgentStepIndicatorProps {
+  // Sekarang menerima format seperti: "counselor" atau "counselor:stress"
   currentStep: string | null;
 }
 
@@ -14,10 +15,13 @@ const STEPS = [
 ];
 
 export function AgentStepIndicator({ currentStep }: AgentStepIndicatorProps) {
-  // Menentukan status (completed, active, pending) untuk masing-masing step
+  // 1. Pecah string untuk mendapatkan base step dan optional ID (jika ada)
+  const [baseStep, optionalId] = (currentStep || "router").split(":");
+
+  // 2. Tentukan status menggunakan baseStep, bukan full currentStep
   const getStepStatus = (stepId: string) => {
     const stepOrder = ["router", "counselor", "prioritizer", "scheduler"];
-    const currentIndex = stepOrder.indexOf(currentStep || "router");
+    const currentIndex = stepOrder.indexOf(baseStep);
     const stepIndex = stepOrder.indexOf(stepId);
 
     if (stepIndex < currentIndex) {
@@ -29,6 +33,21 @@ export function AgentStepIndicator({ currentStep }: AgentStepIndicatorProps) {
     return "pending";
   };
 
+  // 3. Fungsi untuk mengubah deskripsi sesuai dengan optional ID yang sedang aktif
+  const getDynamicDescription = (step: (typeof STEPS)[0]) => {
+    // Jika step ini sedang aktif dan memiliki optionalId
+    if (step.id === baseStep && optionalId) {
+      if (step.id === "counselor" && optionalId === "stress") {
+        return "Handling Stress Issues"; // Ubah teks sesuai kebutuhan
+      }
+      if (step.id === "prioritizer" && optionalId === "manage_task") {
+        return "Managing User Tasks"; // Ubah teks sesuai kebutuhan
+      }
+    }
+    // Jika tidak ada optional ID, kembalikan deskripsi bawaan
+    return step.desc;
+  };
+
   return (
     <div className="w-full bg-[#FAF9FF] border border-[#ECE9FC] rounded-2xl p-4 sm:p-5 mb-4 shadow-sm animate-fadeIn">
       {/* Label atas */}
@@ -37,8 +56,8 @@ export function AgentStepIndicator({ currentStep }: AgentStepIndicatorProps) {
           AI Workflow Processing
         </span>
         <span className="text-[11px] text-[#717182] flex items-center gap-1.5 font-medium">
-          <Loader2 className="w-3 h-3 animate-spin text-[#8A38F5]" />
-          Multi-agent orchestration active
+          {/* <Loader2 className="w-3 h-3 animate-spin text-[#8A38F5]" /> */}
+          Multi-agent orchestration steps
         </span>
       </div>
 
@@ -46,6 +65,7 @@ export function AgentStepIndicator({ currentStep }: AgentStepIndicatorProps) {
       <div className="flex items-center justify-between relative w-full gap-2 overflow-x-auto py-1">
         {STEPS.map((step, idx) => {
           const status = getStepStatus(step.id);
+          const currentDesc = getDynamicDescription(step);
 
           return (
             <div
@@ -60,7 +80,7 @@ export function AgentStepIndicator({ currentStep }: AgentStepIndicatorProps) {
                     status === "completed"
                       ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
                       : status === "active"
-                        ? "bg-[#8A38F5] border-[#8A38F5] text-white shadow-md shadow-purple-100 animate-pulse"
+                        ? "bg-[#8A38F5] border-[#8A38F5] text-white shadow-md shadow-purple-100"
                         : "bg-white border-gray-200 text-gray-400"
                   }`}
                 >
@@ -84,8 +104,8 @@ export function AgentStepIndicator({ currentStep }: AgentStepIndicatorProps) {
                   >
                     {step.label}
                   </span>
-                  <span className="text-[9.5px] text-[#717182] leading-tight">
-                    {step.desc}
+                  <span className="text-[9.5px] text-[#717182] leading-tight transition-all duration-300">
+                    {currentDesc}
                   </span>
                 </div>
               </div>

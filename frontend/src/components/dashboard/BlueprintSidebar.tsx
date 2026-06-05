@@ -76,7 +76,7 @@ export function BlueprintSidebar({
                     size={16}
                     className="text-slate-400 shrink-0 group-hover:text-white"
                     onClick={() => {
-                      onConfirm();
+                      if(window.confirm("Apakah yakin untuk menghapus?"))
                       onRemove(index);
                     }}
                   />

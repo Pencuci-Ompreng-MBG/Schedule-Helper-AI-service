@@ -86,11 +86,11 @@ export default function DashboardClient() {
     if (hitlPayload?.type !== "task_review") return;
     if (!hitlPayload.proposed_schedule?.length) return; // Patokannya dari proposed_schedule
 
-    console.log("hitlPayload tasks: ", hitlPayload.tasks);
-    console.log(
-      "hitlPayload proposed_schedule: ",
-      hitlPayload.proposed_schedule,
-    );
+    // console.log("hitlPayload tasks: ", hitlPayload.tasks);
+    // console.log(
+    //   "hitlPayload proposed_schedule: ",
+    //   hitlPayload.proposed_schedule,
+    // );
 
     // Kita map dari proposed_schedule, lalu kita cari data blueprint pasangannya di array tasks
     const mappedScheduleItems = hitlPayload.proposed_schedule.map(
@@ -128,8 +128,9 @@ export default function DashboardClient() {
 
     setScheduleItems(mappedScheduleItems);
   }, [hitlPayload, setScheduleItems]);
+
   useEffect(() => {
-    console.log("Schedulet Items : ", scheduleItems);
+    console.log("Scheduled Items : ", scheduleItems);
   }, [scheduleItems]);
 
   const handleSendWrapper = async (

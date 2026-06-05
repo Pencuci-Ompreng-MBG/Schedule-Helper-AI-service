@@ -19,9 +19,7 @@ const THREAD_ID_PATTERN = new RegExp("\\u0000THREAD_ID:([^\\u0000]+)\\u0000");
 const EXECUTION_COMPLETE_PATTERN = new RegExp(
   "\\u0000EXECUTION_COMPLETE:([\\s\\S]+?)\\u0000",
 );
-const AGENT_STEP_PATTERN = new RegExp(
-  "\\u0000AGENT_STEP:([\\s\\S]+?)\\u0000",
-);
+const AGENT_STEP_PATTERN = new RegExp("\\u0000AGENT_STEP:([\\s\\S]+?)\\u0000");
 
 const CONTROL_TOKEN_PATTERN = new RegExp(
   "\\u0000(?:THREAD_ID|EXECUTION_COMPLETE|AGENT_STEP):[\\s\\S]*?\\u0000",
@@ -104,22 +102,27 @@ export function useChat(userEmail?: string) {
   const [currentAgentStep, setCurrentAgentStep] = useState<string | null>(null);
   const [isSchedulingDone, setIsSchedulingDone] = useState(false);
   const [scheduledEventCount, setScheduledEventCount] = useState(0);
+  const isAutoNavigating = useRef(false);
 
-  useEffect(() => {
-    if (!hitlPayload && !messages?.length) return;
+  const setTrackedAgentStep = (value: string | null, source: string) => {
+  console.log(`🕵️‍♂️ [TRACKING STEP] "${value}" di-trigger oleh: ${source}`);
+  setCurrentAgentStep(value);
+};
+  // useEffect(() => {
+  //   if (!hitlPayload && !messages?.length) return;
 
-    console.group("UPDATED STATE");
+  //   console.group("UPDATED STATE");
 
-    console.group("HITL PAYLOAD");
-    console.log(hitlPayload);
-    console.groupEnd();
+  //   console.group("HITL PAYLOAD");
+  //   console.log(hitlPayload);
+  //   console.groupEnd();
 
-    console.group("MESSAGES");
-    console.table(messages);
-    console.groupEnd();
+  //   console.group("MESSAGES");
+  //   console.table(messages);
+  //   console.groupEnd();
 
-    console.groupEnd();
-  }, [hitlPayload, messages]);
+  //   console.groupEnd();
+  // }, [hitlPayload, messages]);
 
   useEffect(() => {
     try {
@@ -144,6 +147,11 @@ export function useChat(userEmail?: string) {
       return;
     }
 
+    if (isAutoNavigating.current) {
+      isAutoNavigating.current = false; 
+      return; 
+    }
+
     const loadThread = async () => {
       try {
         const response = await proxyApiFetch(`/agent/${current}`, {
@@ -157,14 +165,13 @@ export function useChat(userEmail?: string) {
         const result = await response.json();
 
         const { hitl, messages } = result.data;
-
         if (hitl?.hitl_payload) {
           setHitlPayload(hitl.hitl_payload);
         }
         if (hitl?.next_node && hitl.next_node.length > 0) {
           const nodeName = hitl.next_node[0];
           if (nodeName !== "__interrupt__") {
-            setCurrentAgentStep(nodeName);
+            setTrackedAgentStep(nodeName, "Load Thread (useEffect)");
           }
         }
 
@@ -203,6 +210,9 @@ export function useChat(userEmail?: string) {
     (threadId: string) => {
       const current = searchParams.get("thread_id");
       if (current) return;
+
+      isAutoNavigating.current = true;
+
       const params = new URLSearchParams(searchParams.toString());
       params.set("thread_id", threadId);
       router.replace(`${pathname}?${params.toString()}`);
@@ -263,16 +273,18 @@ export function useChat(userEmail?: string) {
         if (execMatch) {
           try {
             const execData = JSON.parse(execMatch[1]) as ExecutionComplete;
+            console.log("EXEC", execData)
             if (execData.next_node && execData.next_node.length > 0) {
               const nodeName = execData.next_node[0];
               if (nodeName !== "__interrupt__") {
-                setCurrentAgentStep(nodeName);
+                setTrackedAgentStep(nodeName, "Stream: EXECUTION_COMPLETE");
               }
             }
             if (execData.status === "waiting_hitl" && execData.hitl_payload) {
               setHitlPayload(execData.hitl_payload);
               if (execData.hitl_payload.message) {
-                canonicalAssistantTextRef.current = execData.hitl_payload.message;
+                canonicalAssistantTextRef.current =
+                  execData.hitl_payload.message;
               }
               if (execData.hitl_payload.message) {
                 if (
@@ -286,7 +298,10 @@ export function useChat(userEmail?: string) {
             } else if (execData.status === "done") {
               setIsSchedulingDone(true);
               // Coba gunakan api_payload dari backend jika tersedia
-              if (execData.api_payload && execData.api_payload.scheduled_count !== undefined) {
+              if (
+                execData.api_payload &&
+                execData.api_payload.scheduled_count !== undefined
+              ) {
                 setScheduledEventCount(execData.api_payload.scheduled_count);
               }
               setHitlPayload((prev) => {
@@ -307,9 +322,11 @@ export function useChat(userEmail?: string) {
         if (agentMatch) {
           try {
             const stepData = JSON.parse(agentMatch[1]);
+
             const nodeName = stepData?.update?.node;
-            if (nodeName && nodeName !== "__interrupt__") {
-              setCurrentAgentStep(nodeName);
+            console.log(stepData, "Stream AGENT_STEP Data")
+            if (nodeName && nodeName !== "__interrupt__" && stepData?.update.update.current_intent !== undefined) {
+              setTrackedAgentStep(stepData?.update.update.current_intent, "Stream: AGENT_STEP");
             }
 
             console.log("update data: ", stepData?.update);
@@ -332,10 +349,11 @@ export function useChat(userEmail?: string) {
       combined = combined.replace(LEAKED_EXEC_PATTERN, (match, jsonString) => {
         try {
           const execData = JSON.parse(jsonString) as ExecutionComplete;
+          console.log("EXEC DATA COMBINED", execData)
           if (execData.next_node && execData.next_node.length > 0) {
             const nodeName = execData.next_node[0];
             if (nodeName !== "__interrupt__") {
-              setCurrentAgentStep(nodeName);
+              setTrackedAgentStep(nodeName, "Stream: LEAKED_EXEC_PATTERN");
             }
           }
           if (execData.status === "waiting_hitl" && execData.hitl_payload) {
@@ -346,7 +364,9 @@ export function useChat(userEmail?: string) {
 
             if (
               execData.hitl_payload.message &&
-              assistantStreamTextRef.current.includes(execData.hitl_payload.message)
+              assistantStreamTextRef.current.includes(
+                execData.hitl_payload.message,
+              )
             ) {
               return "";
             }
@@ -401,7 +421,8 @@ export function useChat(userEmail?: string) {
 
       setMessages((prev) => {
         const updated = [...prev];
-        const targetIndex = assistantMessageIndexRef.current ?? updated.length - 1;
+        const targetIndex =
+          assistantMessageIndexRef.current ?? updated.length - 1;
 
         if (updated[targetIndex]?.role === "system") {
           updated[targetIndex] = { role: "system", content: displayText };
@@ -423,14 +444,18 @@ export function useChat(userEmail?: string) {
   const executeChatStream = async (userContent: string, streamPayload: any) => {
     // 1. Reset UI & Preparation
     // Simpan dulu jumlah event yang akan dijadwalkan dari state hitlPayload saat ini
-    if (hitlPayload && "proposed_schedule" in hitlPayload && hitlPayload.proposed_schedule) {
+    if (
+      hitlPayload &&
+      "proposed_schedule" in hitlPayload &&
+      hitlPayload.proposed_schedule
+    ) {
       setScheduledEventCount(hitlPayload.proposed_schedule.length);
     } else {
       setScheduledEventCount(0);
     }
-    
+
     setHitlPayload(null);
-    setCurrentAgentStep(null);
+    // setTrackedAgentStep(null, "executeChatStream: Init Reset");
     setIsSchedulingDone(false);
     setInputValue(""); // Bersihkan input (aman dilakukan di kedua kondisi)
     setIsStarted(true);
@@ -444,7 +469,10 @@ export function useChat(userEmail?: string) {
     setMessages((prev) => {
       const nextMessages = [...prev, userMessage];
       persistMessages(nextMessages); // Simpan pesan user
-      const updated = [...nextMessages, { role: "system" as const, content: "" }];
+      const updated = [
+        ...nextMessages,
+        { role: "system" as const, content: "" },
+      ];
       assistantMessageIndexRef.current = updated.length - 1;
       return updated;
     });
@@ -468,7 +496,6 @@ export function useChat(userEmail?: string) {
       });
     } finally {
       setIsTyping(false);
-      setCurrentAgentStep(null);
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   };
@@ -529,7 +556,7 @@ export function useChat(userEmail?: string) {
     setHitlPayload(null);
     setIsSchedulingDone(false);
     setScheduledEventCount(0);
-    setCurrentAgentStep(null);
+    setTrackedAgentStep(null, "resetChat");
     router.replace(pathname);
   };
 
