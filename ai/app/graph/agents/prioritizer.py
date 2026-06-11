@@ -430,16 +430,16 @@ def apply_hitl_edits(
 ) -> tuple[list[TaskBreakdown], list[ScheduleItem]]:
     """
     Proses editan user dari HITL:
-    - is_locked_time=False → terima perubahan, auto-rebuild schedule (no AI)
-    - is_locked_time=True  → pakai locked_start_time sebagai start_time langsung
+    - is_locked_time=False → auto-rebuild schedule & cari slot kosong.
+    - is_locked_time=True  → pakai locked_start_time sebagai start_time langsung.
 
-    Return: (final_tasks, final_schedule)  ← selalu 2 nilai
+    Return: (final_tasks, final_schedule)
     """
     data = hitl_result.get("approved_data") or hitl_result
     edited_tasks_raw: list[dict] = data.get("tasks") or []
     edited_schedule_raw: list[dict] = data.get("proposed_schedule") or []
 
-    # Tidak ada editan → kembalikan state lama (dengan field dijamin)
+    # Tidak ada editan → kembalikan state lama
     if not edited_tasks_raw:
         safe_tasks = [_ensure_task_fields(t) for t in task_breakdown]
         safe_schedule = [_ensure_schedule_fields(s) for s in proposed_schedule]
@@ -449,9 +449,6 @@ def apply_hitl_edits(
     old_task_map: dict[str, TaskBreakdown] = {
         str(t.get("task_id")): t for t in task_breakdown if isinstance(t, dict)
     }
-    old_schedule_map: dict[str, ScheduleItem] = {
-        str(s.get("task_id")): s for s in proposed_schedule if isinstance(s, dict)
-    }
 
     final_tasks: list[TaskBreakdown] = []
 
@@ -459,7 +456,7 @@ def apply_hitl_edits(
         task_id = str(edited.get("task_id", ""))
         old = old_task_map.get(task_id, {})
 
-        # Merge: nilai dari user lebih prioritas, fallback ke nilai lama
+        # Merge: nilai dari user lebih prioritas
         merged: TaskBreakdown = _ensure_task_fields(
             {
                 "task_id": edited.get("task_id") or old.get("task_id", task_id),
@@ -486,29 +483,32 @@ def apply_hitl_edits(
         )
         final_tasks.append(merged)
 
-    # Urutkan: priority → deadline → durasi terpanjang → task_id
-    final_tasks.sort(
-        key=lambda x: (
-            x["priority"],
-            _deadline_sort_key(x.get("deadline")),
-            -int(x.get("estimated_minutes", 0)),
-            str(x.get("task_id", "")),
-        )
-    )
-
-    # Bangun schedule akhir
+    # RE-GENERATE SCHEDULE LOGIC
     if edited_schedule_raw:
-        # User kirim schedule yang sudah diedit → pakai, tapi enforce locked_start_time
-        final_schedule = _apply_locked_times_to_schedule(
-            schedule=edited_schedule_raw,
-            tasks=final_tasks,
-        )
+        # Jika UI mengirim proposed_schedule, ambil URUTAN task-nya saja
+        ordered_task_ids = [str(s.get("task_id", "")) for s in edited_schedule_raw]
+        
+        def get_order(t):
+            tid = str(t.get("task_id", ""))
+            return ordered_task_ids.index(tid) if tid in ordered_task_ids else 9999
+
+        # Urutkan berdasarkan urutan dari UI
+        final_tasks.sort(key=get_order)
     else:
-        # Rebuild schedule dari final_tasks (is_locked logic sudah di dalam)
-        final_schedule = build_proposed_schedule(final_tasks, existing_schedules)
+        # Jika tidak ada urutan dari UI, urutkan berdasarkan prioritas default
+        final_tasks.sort(
+            key=lambda x: (
+                x["priority"],
+                _deadline_sort_key(x.get("deadline")),
+                -int(x.get("estimated_minutes", 0)),
+                str(x.get("task_id", "")),
+            )
+        )
+
+    # Bikin ulang jadwal secara KESELURUHAN agar task yang False langsung dicarikan slot baru
+    final_schedule = build_proposed_schedule(final_tasks, existing_schedules)
 
     return final_tasks, final_schedule
-
 
 def _apply_locked_times_to_schedule(
     schedule: list[dict],
@@ -795,50 +795,6 @@ def make_prioritizer(llm: BaseChatModel, calendar_client=None):
 
         # ── Jika ada task locked BARU, re-schedule task non-locked via LLM ──
         # (hanya jika user reject, bukan approve)
-        if not approved:
-            newly_locked_ids = {
-                str(t["task_id"]) for t in final_tasks if t.get("is_locked_time")
-            }
-            raw_tasks_for_rerun = get_raw_tasks(state) or []
-
-            if newly_locked_ids and raw_tasks_for_rerun:
-                try:
-                    # Ambil data locked task dari final_tasks (sudah punya locked fields)
-                    locked_tasks = [
-                        t for t in final_tasks if str(t["task_id"]) in newly_locked_ids
-                    ]
-
-                    # Generate breakdown hanya untuk task non-locked
-                    new_breakdown = build_task_breakdown_with_llm(
-                        raw_tasks=raw_tasks_for_rerun,
-                        structured_llm=structured_llm,
-                        schedule_context=_format_schedule_context(
-                            raw_existing_schedules
-                        ),
-                        intent=current_intent,
-                        skip_task_ids=newly_locked_ids,
-                    )
-
-                    # Gabungkan: locked task + task baru dari LLM
-                    all_tasks = locked_tasks + new_breakdown
-                    all_tasks.sort(
-                        key=lambda x: (
-                            x["priority"],
-                            _deadline_sort_key(x.get("deadline")),
-                            -int(x.get("estimated_minutes", 0)),
-                            str(x.get("task_id", "")),
-                        )
-                    )
-                    final_tasks = [_ensure_task_fields(t) for t in all_tasks]
-                    final_schedule = build_proposed_schedule(
-                        final_tasks, raw_existing_schedules
-                    )
-                    print(
-                        f"[Agent 3] Re-schedule: {len(newly_locked_ids)} task locked, "
-                        f"{len(new_breakdown)} task baru dari LLM."
-                    )
-                except Exception as err:
-                    print(f"[Agent 3] Re-schedule gagal, tetap pakai hasil edit: {err}")
 
         if not approved:
             return {
