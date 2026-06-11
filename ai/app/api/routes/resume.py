@@ -89,10 +89,10 @@ async def _stream_resume_events(
             config=config,
             stream_mode=["messages", "updates"],
         ):
-            print(
-                f"[resume-stream][item][thread_id={thread_id}] "
-                f"type={type(stream_item).__name__} value={stream_item}"
-            )
+            # print(
+            #     f"[resume-stream][item][thread_id={thread_id}] "
+            #     f"type={type(stream_item).__name__} value={stream_item}"
+            # )
             if not isinstance(stream_item, tuple) or len(stream_item) < 2:
                 continue
 

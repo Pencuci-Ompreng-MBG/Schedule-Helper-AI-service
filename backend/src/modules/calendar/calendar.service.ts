@@ -11,6 +11,8 @@ type CalendarListQuery = {
   search?: string;
   page?: number;
   limit?: number;
+  startDate?: string;
+  endDate?: string;
 };
 
 type CalendarTaskListResponse = {
@@ -111,7 +113,7 @@ export class CalendarService {
 
   private buildCalendarWhere(
     userId: string,
-    query: CalendarListQuery,
+    query: CalendarListQuery, // Pastikan tipe data CalendarListQuery sudah ada startDate dan endDate
   ): Prisma.TaskWhereInput {
     const where: Prisma.TaskWhereInput = {
       userId,
@@ -135,6 +137,14 @@ export class CalendarService {
         { category: { contains: search, mode: 'insensitive' } },
         { rawInput: { contains: search, mode: 'insensitive' } },
       ];
+    }
+
+    // --- Filter Waktu Spesifik ---
+    if (query.startDate || query.endDate) {
+      where.startTime = {
+        ...(query.startDate ? { gte: new Date(query.startDate) } : {}),
+        ...(query.endDate ? { lte: new Date(query.endDate) } : {}),
+      };
     }
 
     return where;

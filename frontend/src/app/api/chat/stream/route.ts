@@ -22,7 +22,7 @@ type ResumePayload = {
   thread_id: string;
   approved_data:
     | { approved: boolean; additional_context: string | null } // Counselor
-    | { tasks: { task: string; priority: number; deadline: string }[] }; // Prioritizer
+    | { approved: boolean; tasks: any[] };
 };
 
 type ChatPayload = {

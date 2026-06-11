@@ -1,47 +1,45 @@
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
-import type { ScheduleItem } from "@/types";
 import { BlueprintSidebar } from "./BlueprintSidebar";
 import { CalendarPreview } from "./CalendarPreview";
+import { TaskEditor } from "./TaskEditor";
 import type { Blueprint, TaskData } from "./resultStateTypes";
 import {
   buildTaskData,
   DEFAULT_TASK,
-  mapScheduleItemsToBlueprints,
+  mapHitlTasksToBlueprints,
   normalizeEstimatedMinutes,
 } from "./resultStateUtils";
-import { TaskEditor } from "./TaskEditor";
+import type { PrioritizerTask, ProposedSchedule } from "@/hooks/useChat"; // Import sesuai lokasimu
 
 interface ResultStateProps {
-  scheduleItems?: ScheduleItem[];
-  onApprove?: () => void;
+  tasks?: PrioritizerTask[]; // Dari Payload (Kiri)
+  proposedSchedule?: ProposedSchedule[]; // Dari Payload (Kanan)
+  onAction?: (approved: boolean, payloadTasks: PrioritizerTask[]) => void;
 }
 
-export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
+export function ResultState({
+  tasks,
+  proposedSchedule,
+  onAction,
+}: ResultStateProps) {
   const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
-
   const [selectedBlueprintId, setSelectedBlueprintId] = useState("");
-
-  const [popUpMsg, setPopUpMsg] = useState("");
-
-  const selectedBlueprint =
-    blueprints.find((b) => b.id === selectedBlueprintId) || blueprints[0];
-
   const [taskData, setTaskData] = useState<TaskData>(DEFAULT_TASK);
 
-  const onConfirm = () => {
-    window.alert(`Are you sure u want to ${popUpMsg}`);
-  };
-
+  // 1. Membaca 'tasks' saat ada payload baru
   useEffect(() => {
-    const mapped = mapScheduleItemsToBlueprints(scheduleItems);
+    const mapped = mapHitlTasksToBlueprints(tasks);
     setBlueprints(mapped);
     setSelectedBlueprintId((current) => {
       if (mapped.length === 0) return "";
       return mapped.some((bp) => bp.id === current) ? current : mapped[0].id;
     });
-  }, [scheduleItems]);
+  }, [tasks]);
 
+  // 2. Sinkronisasi Form dengan Blueprint terpilih
+  const selectedBlueprint =
+    blueprints.find((b) => b.id === selectedBlueprintId) || blueprints[0];
   useEffect(() => {
     setTaskData(buildTaskData(selectedBlueprint));
   }, [selectedBlueprint]);
@@ -55,6 +53,7 @@ export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
     );
   };
 
+  // 3. Handle Form Changes
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -62,7 +61,6 @@ export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
     const { name, type } = target as HTMLInputElement;
 
     let value: any;
-
     if (type === "checkbox") {
       value = (target as HTMLInputElement).checked;
     } else if (type === "number") {
@@ -74,33 +72,20 @@ export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
       value = (target as HTMLInputElement).value;
     }
 
-    if (name === "deadline_date") {
-      setTaskData((prev) => ({
-        ...prev,
-        deadline: {
-          ...prev.deadline,
-          date: value,
-        },
-      }));
-      return;
-    }
-
-    if (name === "deadline_time") {
-      setTaskData((prev) => ({
-        ...prev,
-        deadline: {
-          ...prev.deadline,
-          time: value,
-        },
-      }));
-      return;
-    }
-
     setTaskData((prev) => {
-      const next = {
-        ...prev,
-        [name]: value,
-      };
+      const next = { ...prev };
+
+      if (name === "deadline_date") {
+        next.deadline = { ...prev.deadline, date: value };
+      } else if (name === "deadline_time") {
+        next.deadline = { ...prev.deadline, time: value };
+      } else if (name === "locked_date") {
+        next.locked_start_time = { ...prev.locked_start_time, date: value };
+      } else if (name === "locked_time") {
+        next.locked_start_time = { ...prev.locked_start_time, time: value };
+      } else {
+        (next as any)[name] = value;
+      }
 
       updateSelectedBlueprint((bp) => ({
         ...bp,
@@ -110,8 +95,8 @@ export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
         deadline: next.deadline,
         preferred_window: next.preferred_window,
         category: next.category,
-        isSpecificTime: next.isSpecificTime,
-        specific_start_time: next.specific_start_time,
+        is_locked_time: next.is_locked_time,
+        locked_start_time: next.locked_start_time,
       }));
 
       return next;
@@ -124,61 +109,94 @@ export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
       subtasks: bp.subtasks.map((s, i) => (i === index ? value : s)),
     }));
   };
-
   const addSubtask = () => {
     updateSelectedBlueprint((bp) => ({
       ...bp,
       subtasks: [...bp.subtasks, "Subtask baru"],
     }));
   };
-
   const removeSubtask = (index: number) => {
     updateSelectedBlueprint((bp) => ({
       ...bp,
       subtasks: bp.subtasks.filter((_, i) => i !== index),
     }));
   };
-
-  const addBlueprint = () => {
-    const newBlueprint: Blueprint = {
-      id: `manual-${Date.now()}`,
-      title: "Blueprint Baru",
-      estimated_minutes: 30,
-      priority: 3,
-      subtasks: ["Task pertama"],
-      deadline: { date: "", time: "" },
-      preferred_window: "bebas",
-      category: "general",
-      isSpecificTime: false,
-      specific_start_time: {
-        date: "19-11-2026",
-        time: "19:00",
-      },
-      time: "Belum dijadwalkan",
-    };
-
-    setBlueprints((prev) => [...prev, newBlueprint]);
-    setSelectedBlueprintId(newBlueprint.id);
-    setTaskData(buildTaskData(newBlueprint));
-  };
-
   const removeBlueprint = (indexToDelete: number) => {
     setBlueprints((prev) => prev.filter((_, index) => index !== indexToDelete));
   };
 
+  const addBlueprint = () => {
+    const newBlueprint: Blueprint = {
+      id: `manual-${Date.now()}`,
+      title: "Tugas Baru",
+      estimated_minutes: 30,
+      priority: 3,
+      subtasks: ["Langkah pertama"],
+      deadline: { date: "", time: "23:59" },
+      preferred_window: "bebas",
+      category: "biasa",
+      is_locked_time: false,
+      locked_start_time: {
+        date: "",
+        time: "09:00",
+      },
+      priority_reasoning: "Tugas ditambahkan secara manual oleh pengguna.",
+    };
+
+    setBlueprints((prev) => [...prev, newBlueprint]);
+
+    setSelectedBlueprintId(newBlueprint.id);
+
+    setTaskData(buildTaskData(newBlueprint));
+  };
+
+  // 4. Construct Payload untuk API LangGraph
+  const submitToAI = (isApproved: boolean) => {
+    if (!onAction) return;
+
+    // Mapping format Blueprint kembali ke format Python (PrioritizerTask)
+    const payloadTasks: PrioritizerTask[] = blueprints.map((bp) => {
+      const deadlineIso = bp.deadline.date
+        ? `${bp.deadline.date}T${bp.deadline.time || "23:59"}:00`
+        : null;
+        const lockedIso =
+        bp.is_locked_time && bp.locked_start_time.date
+          ? `${bp.locked_start_time.date}T${bp.locked_start_time.time || "00:00"}:00`
+          : undefined;
+      console.log("locked iso:", lockedIso);
+      return {
+        task_id: bp.id,
+        title: bp.title,
+        subtasks: bp.subtasks,
+        estimated_minutes: Number(bp.estimated_minutes),
+        deadline: deadlineIso,
+        priority: Number(bp.priority),
+        category: bp.category,
+        preferred_window: bp.preferred_window,
+        priority_reasoning: bp.priority_reasoning,
+        is_locked_time: bp.is_locked_time,
+        locked_start_time: lockedIso,
+      };
+    });
+    
+    console.log(
+      "payload: ",
+      payloadTasks
+    );
+    onAction(isApproved, payloadTasks);
+  };
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr_420px] gap-5 text-slate-900">
-      {/* LEFT SIDEBAR */}
       <BlueprintSidebar
         blueprints={blueprints}
         selectedId={selectedBlueprintId}
         onAdd={addBlueprint}
         onSelect={setSelectedBlueprintId}
         onRemove={removeBlueprint}
-        onConfirm={onConfirm}
+        onConfirm={() => {}}
       />
 
-      {/* CENTER */}
       <TaskEditor
         taskData={taskData}
         subtasks={selectedBlueprint?.subtasks ?? []}
@@ -186,17 +204,12 @@ export function ResultState({ scheduleItems, onApprove }: ResultStateProps) {
         onAddSubtask={addSubtask}
         onSubtaskChange={handleSubtaskChange}
         onRemoveSubtask={removeSubtask}
-        onApprove={onApprove}
+        onSimpanRevisi={() => submitToAI(false)}
+        onApprove={() => submitToAI(true)}
         blueprintAvailable={blueprints.length === 0}
       />
 
-      {/* RIGHT PANEL */}
-      <CalendarPreview
-        blueprints={blueprints}
-        timeLabel={selectedBlueprint?.time || "Belum dijadwalkan"}
-        subtasks={selectedBlueprint?.subtasks ?? []}
-        blueprintAvailable={blueprints.length === 0}
-      />
+      <CalendarPreview proposedSchedule={proposedSchedule} />
     </div>
   );
 }

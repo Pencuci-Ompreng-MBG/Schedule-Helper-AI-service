@@ -57,6 +57,16 @@ export class CalendarController {
     required: false,
     description: 'Search by title, description, category, or raw input',
   })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Filter schedule starting from specific date/time (ISO 8601)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Filter schedule up to specific date/time (ISO 8601)',
+  })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Page size' })
   findAll(@GetUser('id') userId: string, @Query() query: CalendarListQueryDto) {

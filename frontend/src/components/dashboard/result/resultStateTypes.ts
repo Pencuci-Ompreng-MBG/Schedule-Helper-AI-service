@@ -1,3 +1,8 @@
+export interface DateTime {
+  date: string;
+  time: string;
+}
+
 export interface Blueprint {
   id: string;
   title: string;
@@ -7,9 +12,9 @@ export interface Blueprint {
   deadline: DateTime;
   preferred_window: string;
   category: string;
-  isSpecificTime: boolean;
-  specific_start_time: DateTime;
-  time: string;
+  is_locked_time: boolean;
+  locked_start_time: DateTime;
+  priority_reasoning?: string;
 }
 
 export interface TaskData {
@@ -19,11 +24,7 @@ export interface TaskData {
   preferred_window: string;
   priority: number;
   category: string;
-  isSpecificTime: boolean;
-  specific_start_time: DateTime;
-}
-
-interface DateTime {
-  date: string;
-  time: string;
+  is_locked_time: boolean;
+  locked_start_time: DateTime;
+  priority_reasoning?: string;
 }

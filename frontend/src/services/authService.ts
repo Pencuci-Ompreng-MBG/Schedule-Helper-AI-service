@@ -23,6 +23,7 @@ export const authService = {
       });
 
       if (!response.ok) {
+        window.location.href = "auth/login"
         throw new Error("Failed to fetch user profile");
       }
 

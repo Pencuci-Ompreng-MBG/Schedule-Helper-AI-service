@@ -86,7 +86,12 @@ class BackendCalendarClient:
 
     def list_schedules(self, cookies: dict[str, str] | None = None) -> list[dict]:
         data = self._request_json("GET", "/api/calendar", cookies=cookies)
-        return data if isinstance(data, list) else []
+        # print("DATA:", data, flush=True)
+        if isinstance(data, dict):
+            return data.get("items", [])
+        elif isinstance(data, list):
+            return data
+        return []
 
     def get_schedule(
         self, schedule_id: str, cookies: dict[str, str] | None = None

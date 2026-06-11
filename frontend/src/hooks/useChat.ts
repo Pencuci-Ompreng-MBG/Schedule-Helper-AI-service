@@ -77,6 +77,9 @@ export type PrioritizerTask = {
   deadline: string | null;
   category: string;
   preferred_window: string;
+  is_locked_time?: boolean;
+  priority_reasoning?: string;
+  locked_start_time?: string;
 };
 
 export type ExecutionComplete = {
@@ -89,7 +92,7 @@ export type ExecutionComplete = {
 
 export type ResumeData =
   | { approved: boolean; additional_context?: string | null }
-  | { tasks: { task: string; priority: number; deadline: string }[] };
+  | { tasks: any[] };
 
 export function useChat(userEmail?: string) {
   const router = useRouter();
@@ -105,9 +108,9 @@ export function useChat(userEmail?: string) {
   const isAutoNavigating = useRef(false);
 
   const setTrackedAgentStep = (value: string | null, source: string) => {
-  console.log(`🕵️‍♂️ [TRACKING STEP] "${value}" di-trigger oleh: ${source}`);
-  setCurrentAgentStep(value);
-};
+    // console.log(`🕵️‍♂️ [TRACKING STEP] "${value}" di-trigger oleh: ${source}`);
+    setCurrentAgentStep(value);
+  };
   // useEffect(() => {
   //   if (!hitlPayload && !messages?.length) return;
 
@@ -148,8 +151,8 @@ export function useChat(userEmail?: string) {
     }
 
     if (isAutoNavigating.current) {
-      isAutoNavigating.current = false; 
-      return; 
+      isAutoNavigating.current = false;
+      return;
     }
 
     const loadThread = async () => {
@@ -273,7 +276,7 @@ export function useChat(userEmail?: string) {
         if (execMatch) {
           try {
             const execData = JSON.parse(execMatch[1]) as ExecutionComplete;
-            console.log("EXEC", execData)
+            // console.log("EXEC", execData);
             if (execData.next_node && execData.next_node.length > 0) {
               const nodeName = execData.next_node[0];
               if (nodeName !== "__interrupt__") {
@@ -324,12 +327,19 @@ export function useChat(userEmail?: string) {
             const stepData = JSON.parse(agentMatch[1]);
 
             const nodeName = stepData?.update?.node;
-            console.log(stepData, "Stream AGENT_STEP Data")
-            if (nodeName && nodeName !== "__interrupt__" && stepData?.update.update.current_intent !== undefined) {
-              setTrackedAgentStep(stepData?.update.update.current_intent, "Stream: AGENT_STEP");
+            // console.log(stepData, "Stream AGENT_STEP Data");
+            if (
+              nodeName &&
+              nodeName !== "__interrupt__" &&
+              stepData?.update.update.current_intent !== undefined
+            ) {
+              setTrackedAgentStep(
+                stepData?.update.update.current_intent,
+                "Stream: AGENT_STEP",
+              );
             }
 
-            console.log("update data: ", stepData?.update);
+            // console.log("update data: ", stepData?.update);
             const tasks: RawTasks[] = stepData.update?.update?.raw_tasks || [];
             if (tasks.length > 0 && nodeName !== "__interrupt__") {
               console.log("lebih 0");
@@ -349,7 +359,7 @@ export function useChat(userEmail?: string) {
       combined = combined.replace(LEAKED_EXEC_PATTERN, (match, jsonString) => {
         try {
           const execData = JSON.parse(jsonString) as ExecutionComplete;
-          console.log("EXEC DATA COMBINED", execData)
+          // console.log("EXEC DATA COMBINED", execData);
           if (execData.next_node && execData.next_node.length > 0) {
             const nodeName = execData.next_node[0];
             if (nodeName !== "__interrupt__") {

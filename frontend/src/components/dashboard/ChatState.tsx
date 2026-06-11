@@ -13,7 +13,7 @@ import { AgentStepIndicator } from "./AgentStepIndicator";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
 import { CounselorApproveBar } from "./CounselorApproveBar";
-import { ResultState } from "./ResultState";
+import { ResultState } from "./result/ResultState";
 import { TypingIndicator } from "./TypingIndicator";
 
 interface ChatStateProps {
@@ -124,22 +124,25 @@ export function ChatState({
                 return (
                   <div key={index} className="flex flex-col gap-4">
                     {msg.role !== "system" && <ChatMessage message={msg} />}
-                    {isLastIndex && <AgentStepIndicator currentStep={currentAgentStep} />}
-                    
+                    {isLastIndex && (
+                      <AgentStepIndicator currentStep={currentAgentStep} />
+                    )}
+
                     {msg.role === "system" &&
                       (isLastIndex && isTyping ? (
                         <div className="flex flex-col gap-3">
                           <TypingIndicator />
                         </div>
-                      ) : isLastIndex && (hitlPayload?.type === "counselor_chat" ||
-                        hitlPayload?.type === "counselor_review") ? (
-                        <ChatMessage 
+                      ) : isLastIndex &&
+                        (hitlPayload?.type === "counselor_chat" ||
+                          hitlPayload?.type === "counselor_review") ? (
+                        <ChatMessage
                           message={{
                             ...msg,
                             content: msg.content.includes(hitlPayload.message)
                               ? msg.content
-                              : msg.content + "\n\n" + hitlPayload.message
-                          }} 
+                              : msg.content + "\n\n" + hitlPayload.message,
+                          }}
                         />
                       ) : (
                         <ChatMessage message={msg} />
@@ -151,14 +154,16 @@ export function ChatState({
 
             {hitlPayload?.type === "task_review" && (
               <ResultState
-                scheduleItems={scheduleItems}
-                onApprove={() =>
+              tasks={hitlPayload.tasks}
+              proposedSchedule={hitlPayload.proposed_schedule}
+              onAction={(approved, payloadTasks) => {
+                  console.log('payload tasks: ',payloadTasks)
+                  // Kirim ke backend (Prioritizer Agent)
                   handleSend(null, {
-                    approved: true,
-                  })
-                }
-                // Jika di parent ada fungsi onEditSchedule atau onEditTask, Anda bisa melemparnya ke sini
-                // onEditSchedule={handleEditSchedule}
+                    approved: approved,
+                    tasks: payloadTasks,
+                  });
+                }}
               />
             )}
 
