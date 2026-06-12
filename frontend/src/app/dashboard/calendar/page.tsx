@@ -31,6 +31,7 @@ export default function CalendarPage() {
     loadMoreRef,
     handleSync,
     handleToggleMainTask,
+    handleToggleSubtask,
     updatingTaskId,
     refreshTasks,
   } = useCalendarTasks();
@@ -101,6 +102,7 @@ export default function CalendarPage() {
             onSearchChange={setSearchInput}
             onRetry={refreshTasks}
             onToggleMainTask={handleToggleMainTask}
+            onToggleSubtask={handleToggleSubtask}
             updatingTaskId={updatingTaskId}
             loadMoreRef={loadMoreRef}
           />

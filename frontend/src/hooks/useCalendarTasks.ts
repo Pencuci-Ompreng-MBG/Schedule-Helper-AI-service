@@ -218,6 +218,41 @@ export function useCalendarTasks() {
     [completionFilter, updatingTaskId],
   );
 
+  const handleToggleSubtask = useCallback(
+    async (taskId: string, subtaskIndex: number) => {
+      if (updatingTaskId) return;
+
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || !task.subtasks) return;
+
+      const subtaskStr = task.subtasks[subtaskIndex];
+      const isCompleted = subtaskStr.startsWith("[x] ");
+      const rawText = subtaskStr.replace(/^\[[x ]\] /, "");
+      
+      const newPrefix = isCompleted ? "[ ] " : "[x] ";
+      const newSubtaskStr = `${newPrefix}${rawText}`;
+
+      const newSubtasks = [...task.subtasks];
+      newSubtasks[subtaskIndex] = newSubtaskStr;
+
+      setUpdatingTaskId(taskId);
+      try {
+        await scheduleService.updateCalendarTask(taskId, { subtasks: newSubtasks });
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === taskId ? { ...t, subtasks: newSubtasks } : t
+          )
+        );
+      } catch (e) {
+        console.error("Gagal mengubah status subtask:", e);
+        setError("Gagal mengubah status subtask.");
+      } finally {
+        setUpdatingTaskId(null);
+      }
+    },
+    [tasks, updatingTaskId]
+  );
+
   const visibleTasks = useMemo(() => tasks, [tasks]);
 
   return {
@@ -241,6 +276,7 @@ export function useCalendarTasks() {
     loadMoreRef,
     handleSync,
     handleToggleMainTask,
+    handleToggleSubtask,
     updatingTaskId,
     refreshTasks,
   };

@@ -13,7 +13,6 @@ import type { CalendarTask } from "@/types";
 interface CalendarTaskCardProps {
   task: CalendarTask;
   isExpanded: boolean;
-  isSubtaskCompleted: (taskId: string, index: number) => boolean;
   onToggleExpand: (taskId: string) => void;
   onToggleMainTask: (taskId: string, currentStatus: string) => void;
   onToggleSubtask: (taskId: string, index: number) => void;
@@ -96,7 +95,6 @@ function getStatusClass(status: string) {
 export function CalendarTaskCard({
   task,
   isExpanded,
-  isSubtaskCompleted,
   onToggleExpand,
   onToggleMainTask,
   onToggleSubtask,
@@ -215,7 +213,8 @@ export function CalendarTaskCard({
           {isExpanded && (
             <div className="mt-3 pl-2 border-l-2 border-gray-100 space-y-2 animate-fadeIn">
               {task.subtasks.map((subtask, index) => {
-                const completed = isSubtaskCompleted(task.id, index);
+                const completed = subtask.startsWith("[x] ");
+                const displayText = subtask.replace(/^\[[x ]\] /, "");
 
                 return (
                   <div key={`${task.id}-${index}`} className="flex items-start gap-2.5 group">
@@ -235,7 +234,7 @@ export function CalendarTaskCard({
                       }`}
                       onClick={() => onToggleSubtask(task.id, index)}
                     >
-                      {subtask}
+                      {displayText}
                     </span>
                   </div>
                 );

@@ -288,10 +288,11 @@ export class CalendarService {
         // Buat subtasks sebagai child task
         if (dto.subtasks && dto.subtasks.length > 0 && googleTaskId) {
           for (const subtask of dto.subtasks) {
+            const rawTitle = subtask.replace(/^\[[x ]\] /, '');
             await tasksClient.tasks.insert({
               tasklist: '@default',
               parent: googleTaskId,
-              requestBody: { title: subtask },
+              requestBody: { title: rawTitle },
             });
           }
           console.log(
@@ -345,6 +346,42 @@ export class CalendarService {
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         console.error('[Google Calendar] Gagal update event:', message);
+      }
+    }
+
+    const tasksClient = await this.getGoogleTasks(userId);
+    if (tasksClient && task.googleTaskId && dto.subtasks) {
+      try {
+        const googleTasksRes = await tasksClient.tasks.list({
+          tasklist: '@default',
+          showHidden: true,
+        });
+        const children =
+          googleTasksRes.data.items?.filter(
+            (t) => t.parent === task.googleTaskId,
+          ) || [];
+
+        for (const sub of dto.subtasks) {
+          const isCompleted = sub.startsWith('[x] ');
+          const rawTitle = sub.replace(/^\[[x ]\] /, '');
+
+          const matchingChild = children.find(
+            (c) => c.title === rawTitle || c.title === sub,
+          );
+          if (matchingChild && matchingChild.id) {
+            const newStatus = isCompleted ? 'completed' : 'needsAction';
+            if (matchingChild.status !== newStatus) {
+              await tasksClient.tasks.patch({
+                tasklist: '@default',
+                task: matchingChild.id,
+                requestBody: { status: newStatus },
+              });
+            }
+          }
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error('[Google Tasks] Gagal update subtasks:', message);
       }
     }
 

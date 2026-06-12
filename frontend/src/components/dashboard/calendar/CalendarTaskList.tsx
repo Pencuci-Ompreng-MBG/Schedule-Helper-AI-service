@@ -25,6 +25,7 @@ interface CalendarTaskListProps {
   onSearchChange: (value: string) => void;
   onRetry: () => void;
   onToggleMainTask: (taskId: string, currentStatus: string) => void;
+  onToggleSubtask: (taskId: string, index: number) => void;
   updatingTaskId: string | null;
   loadMoreRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -81,11 +82,11 @@ export function CalendarTaskList({
   onSearchChange,
   onRetry,
   onToggleMainTask,
+  onToggleSubtask,
   updatingTaskId,
   loadMoreRef,
 }: CalendarTaskListProps) {
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
-  const [subtaskStatus, setSubtaskStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const visibleTaskIds = new Set(tasks.map((task) => task.id));
@@ -99,17 +100,6 @@ export function CalendarTaskList({
       }
       return nextState;
     });
-
-    setSubtaskStatus((prev) => {
-      const nextState: Record<string, boolean> = {};
-      for (const [key, value] of Object.entries(prev)) {
-        const taskId = key.split("-")[0];
-        if (visibleTaskIds.has(taskId)) {
-          nextState[key] = value;
-        }
-      }
-      return nextState;
-    });
   }, [tasks]);
 
   const toggleTaskExpand = (taskId: string) => {
@@ -117,18 +107,6 @@ export function CalendarTaskList({
       ...prev,
       [taskId]: !prev[taskId],
     }));
-  };
-
-  const handleToggleSubtask = (taskId: string, index: number) => {
-    const key = `${taskId}-${index}`;
-    setSubtaskStatus((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
-  const isSubtaskCompleted = (taskId: string, index: number) => {
-    return Boolean(subtaskStatus[`${taskId}-${index}`]);
   };
 
   return (
@@ -177,10 +155,9 @@ export function CalendarTaskList({
                   key={task.id}
                   task={task}
                   isExpanded={isExpanded}
-                  isSubtaskCompleted={isSubtaskCompleted}
                   onToggleExpand={toggleTaskExpand}
                   onToggleMainTask={onToggleMainTask}
-                  onToggleSubtask={handleToggleSubtask}
+                  onToggleSubtask={onToggleSubtask}
                   updatingTaskId={updatingTaskId}
                 />
               );
