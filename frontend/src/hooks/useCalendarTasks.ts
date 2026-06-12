@@ -217,7 +217,7 @@ export function useCalendarTasks() {
     },
     [completionFilter, updatingTaskId],
   );
-
+// update subtasks
   const handleToggleSubtask = useCallback(
     async (taskId: string, subtaskIndex: number) => {
       if (updatingTaskId) return;
