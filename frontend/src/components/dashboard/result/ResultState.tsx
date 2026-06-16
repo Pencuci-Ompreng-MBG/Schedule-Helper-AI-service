@@ -6,6 +6,7 @@ import { TaskEditor } from "./TaskEditor";
 import type { Blueprint, TaskData } from "./resultStateTypes";
 import {
   buildTaskData,
+  calculatePriorityLevel,
   DEFAULT_TASK,
   mapHitlTasksToBlueprints,
   normalizeEstimatedMinutes,
@@ -63,7 +64,7 @@ export function ResultState({
     let value: any;
     if (type === "checkbox") {
       value = (target as HTMLInputElement).checked;
-    } else if (type === "number") {
+    } else if (type === "number" || type === "range") {
       const raw = (target as HTMLInputElement).value;
       value = raw === "" ? "" : Number(raw);
     } else if (name === "priority") {
@@ -85,8 +86,18 @@ export function ResultState({
         next.locked_start_time = { ...prev.locked_start_time, time: value };
       } else {
         (next as any)[name] = value;
+        console.log("VALUE: ", value, name)
       }
-
+      
+      if (["urgency", "importance", "effort", "energy_fit"].includes(name)) {
+        next.priority = calculatePriorityLevel(
+          next.urgency,
+          next.importance,
+          next.effort,
+          next.energy_fit,
+        );
+      }
+      
       updateSelectedBlueprint((bp) => ({
         ...bp,
         title: next.title,
@@ -97,10 +108,17 @@ export function ResultState({
         category: next.category,
         is_locked_time: next.is_locked_time,
         locked_start_time: next.locked_start_time,
+        
+        // --- TAMBAHKAN 4 BARIS INI ---
+        urgency: next.urgency,
+        importance: next.importance,
+        effort: next.effort,
+        energy_fit: next.energy_fit,
       }));
 
       return next;
     });
+    console.log(taskData, selectedBlueprint);
   };
 
   const handleSubtaskChange = (index: number, value: string) => {
@@ -140,6 +158,10 @@ export function ResultState({
         date: "",
         time: "09:00",
       },
+      urgency: 3,
+      importance: 3,
+      effort: 3,
+      energy_fit: 3,
       priority_reasoning: "Tugas ditambahkan secara manual oleh pengguna.",
     };
 
@@ -159,7 +181,7 @@ export function ResultState({
       const deadlineIso = bp.deadline.date
         ? `${bp.deadline.date}T${bp.deadline.time || "23:59"}:00`
         : null;
-        const lockedIso =
+      const lockedIso =
         bp.is_locked_time && bp.locked_start_time.date
           ? `${bp.locked_start_time.date}T${bp.locked_start_time.time || "00:00"}:00`
           : undefined;
@@ -176,18 +198,19 @@ export function ResultState({
         priority_reasoning: bp.priority_reasoning,
         is_locked_time: bp.is_locked_time,
         locked_start_time: lockedIso,
+        urgency: bp.urgency,
+        importance: bp.importance,
+        effort: bp.effort,
+        energy_fit: bp.energy_fit,
       };
     });
-    
-    console.log(
-      "payload: ",
-      payloadTasks
-    );
+
+    console.log("payload: ", payloadTasks);
     onAction(isApproved, payloadTasks);
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr_420px] gap-5 text-slate-900">
+    <div className="relative grid grid-cols-1 xl:grid-cols-[320px_1fr_420px] gap-5 text-slate-900">
       <BlueprintSidebar
         blueprints={blueprints}
         selectedId={selectedBlueprintId}

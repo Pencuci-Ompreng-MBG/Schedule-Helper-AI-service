@@ -54,7 +54,7 @@ export function CalendarPreview({
     setCurrentDateIndex((p) => Math.min(dates.length - 1, p + 1));
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-5 h-fit max-h-[85vh] overflow-y-auto scrollbar-thin">
+    <div className="bg-white border border-slate-200 rounded-3xl p-5 h-fit max-h-[65vh] overflow-y-auto scrollbar-thin z-10 sticky -top-5">
       <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
           <CalendarDays size={18} className="text-emerald-600" />

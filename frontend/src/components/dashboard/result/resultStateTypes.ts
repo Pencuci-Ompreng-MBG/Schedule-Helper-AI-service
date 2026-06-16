@@ -15,6 +15,11 @@ export interface Blueprint {
   is_locked_time: boolean;
   locked_start_time: DateTime;
   priority_reasoning?: string;
+
+  urgency: number;
+  importance: number;
+  effort: number;
+  energy_fit: number;
 }
 
 export interface TaskData {
@@ -27,4 +32,9 @@ export interface TaskData {
   is_locked_time: boolean;
   locked_start_time: DateTime;
   priority_reasoning?: string;
+
+  urgency: number;
+  importance: number;
+  effort: number;
+  energy_fit: number;
 }

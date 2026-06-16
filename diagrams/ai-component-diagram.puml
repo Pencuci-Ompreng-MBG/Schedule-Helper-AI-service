@@ -1,0 +1,46 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Component Diagram - AI Agent Service (LangGraph)
+
+Container(web_app, "Web Application", "Next.js", "Mengirim pesan user dan menerima stream SSE/HITL payload.")
+Container(backend_api, "Core Backend API", "NestJS", "Menyediakan data kalender user dan bertindak sebagai proxy ke Google Calendar.")
+System_Ext(llm_api, "LLM Provider", "Gemini / OpenAI untuk ekstraksi dan reasoning.")
+ContainerDb(redis, "Redis Cache", "Redis", "Menyimpan LangGraph checkpoint, conversation state, cache response LLM, dan hasil scheduling sementara.")
+
+Container_Boundary(ai_service, "AI Agent Service") {
+
+    Component(orchestrator, "LangGraph Orchestrator", "Python / LangGraph", "Pengendali alur (State Graph). Mengatur siklus pesan, memori, dan menahan eksekusi untuk HITL (Human-in-the-loop).")
+
+    Component(router_agent, "Router Agent", "Python (router.py)", "Mengekstrak 'raw_tasks' dari ucapan user dan mendeteksi kondisi emosional (intent).")
+
+    Component(counselor_agent, "Counselor Agent", "Python (counselor.py)", "Berinteraksi empatik dengan user untuk melengkapi detail jadwal yang masih ambigu/vague.")
+
+    Component(prioritizer_agent, "Prioritizer Agent", "Python (prioritizer.py)", "Menghitung prioritas, mendeteksi bentrok jadwal (collision), dan menyusun draft jadwal (Proposed Schedule).")
+
+    Component(scheduler_agent, "Scheduler Agent", "Python (scheduler.py)", "Eksekutor akhir. Menerima draf yang sudah di-approve dan menyimpannya secara permanen ke sistem.")
+
+    Component(calendar_client, "Backend Calendar Client", "Python (calendar.py)", "Klien HTTP internal (memakai cookies user) untuk membaca dan menulis jadwal ke NestJS.")
+}
+
+Rel(web_app, orchestrator, "Kirim chat & trigger state", "JSON/HTTPS")
+Rel(orchestrator, web_app, "Kirim respon chat & HITL Review", "SSE")
+
+Rel(orchestrator, router_agent, "Route input baru")
+Rel(orchestrator, counselor_agent, "Jika task ambigu / kurang info")
+Rel(orchestrator, prioritizer_agent, "Jika task lengkap / butuh draft jadwal")
+Rel(orchestrator, scheduler_agent, "Jika draft jadwal sudah di-approve user (HITL)")
+
+Rel(router_agent, llm_api, "Analisis teks & klasifikasi", "REST API")
+Rel(counselor_agent, llm_api, "Generate respon empatik", "REST API")
+Rel(prioritizer_agent, llm_api, "Breakdown subtask & reasoning", "REST API")
+
+Rel(prioritizer_agent, calendar_client, "Minta jadwal existing (Pull) untuk cek bentrok")
+Rel(scheduler_agent, calendar_client, "Kirim jadwal final (Push) untuk disimpan")
+
+Rel(calendar_client, backend_api, "Hit /api/calendar (GET/POST)", "REST API (dengan Cookies)")
+
+Rel(orchestrator, redis, "Read/Write state, cache, checkpoint", "TCP")
+
+SHOW_LEGEND()
+@enduml

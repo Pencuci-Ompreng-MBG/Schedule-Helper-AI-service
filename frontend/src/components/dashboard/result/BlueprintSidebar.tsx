@@ -20,7 +20,7 @@ export function BlueprintSidebar({
   onConfirm,
 }: BlueprintSidebarProps) {
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden h-fit fade-in-60">
+    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden h-fit fade-in-60 sticky -top-5">
       <div className="p-5 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">

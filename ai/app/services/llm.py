@@ -23,6 +23,7 @@ def get_llm(provider: str, model: str, temperature: float = 0.0, **kwargs):
             api_key=settings.groq_api_key, # type: ignore
             model=model,
             temperature=temperature,
+            reasoning_effort="medium",
             model_kwargs=kwargs
         )
     

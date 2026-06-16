@@ -9,6 +9,7 @@ import {
 import React, { type ChangeEvent, useState } from "react";
 import { TaskData } from "./resultStateTypes";
 import { TimePickerField } from "@/components/TimePickerField";
+import MetricInfoModal from "./MetricInfoModal";
 
 interface TaskEditorProps {
   taskData: TaskData;
@@ -44,7 +45,7 @@ export function TaskEditor({
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm w-full mx-auto max-h-[85vh] overflow-y-auto scrollbar-thin">
+    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm w-full mx-auto overflow-y-auto scrollbar-thin">
       <div className="flex items-center justify-between gap-4 mb-6">
         <div className="flex-1">
           <h2 className="text-2xl font-semibold text-slate-900">
@@ -81,7 +82,6 @@ export function TaskEditor({
         </button>
       </div>
 
-      {/* REASONING DARI AI */}
       {taskData.priority_reasoning && (
         <div className="bg-indigo-50/70 border border-indigo-100 p-4 rounded-2xl mb-6">
           <p className="text-xs text-indigo-500 font-bold tracking-wider uppercase mb-1">
@@ -93,6 +93,68 @@ export function TaskEditor({
         </div>
       )}
 
+      <div className="border-t border-slate-100 pt-6 mt-2 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-semibold text-slate-900">
+              Metrik Keputusan AI
+            </h3>
+
+            <p className="text-sm text-slate-400">
+              Ubah metrik ini untuk menyesuaikan prioritas secara otomatis.
+            </p>
+          </div>
+
+          <MetricInfoModal />
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4 bg-slate-50/50 p-4 border border-slate-200 rounded-2xl">
+          {[
+            {
+              label: "Tingkat Mendesak (Urgency)",
+              name: "urgency",
+              val: taskData.urgency,
+            },
+            {
+              label: "Penting/Dampak (Importance)",
+              name: "importance",
+              val: taskData.importance,
+            },
+            {
+              label: "Beban Kerja (Effort)",
+              name: "effort",
+              val: taskData.effort,
+            },
+            {
+              label: "Kecocokan Energi (Energy Fit)",
+              name: "energy_fit",
+              val: taskData.energy_fit,
+            },
+          ].map((metric) => (
+            <div key={metric.name}>
+              <div className="flex justify-between text-xs font-semibold mb-1">
+                <span className="text-slate-600">{metric.label}</span>
+                <span className="text-indigo-600">{metric.val}/5</span>
+              </div>
+              <input
+                type="range"
+                name={metric.name}
+                min="1"
+                max="5"
+                step="1"
+                value={metric.val}
+                onChange={onChange}
+                disabled={!onEdit}
+                className={`w-full accent-indigo-600 ${!onEdit ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              />
+              <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>Rendah</span>
+                <span>Tinggi</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
           <label className="text-sm font-medium text-slate-600 mb-2 block">

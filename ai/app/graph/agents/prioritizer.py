@@ -95,6 +95,25 @@ Scoring energy_fit (1-5): 5=cocok dikerjakan segera, 4=setelah planning, 3=netra
 
 Kategori: serius | santai | biasa | lainnya
 Preferred window: pagi | siang | sore | malam | bebas
+
+5. PRIORITY_REASONING (PENTING — ini yang dibaca user untuk paham KENAPA tugas diberi prioritas/urutan tertentu):
+   - Tulis 1-3 kalimat singkat, gaya asisten ramah, BUKAN jargon teknis ("MCDA", "Eisenhower Matrix", "AHP", "skor 0.45*urgency" dst TIDAK BOLEH disebut).
+   - Sebutkan SECARA EKSPLISIT faktor mana yang paling mendorong prioritas task ini, pilih 1-2 faktor dominan dari: urgency (deadline mendesak), importance (dampak besar), effort (beratnya tugas), energy_fit (cocok dikerjakan sekarang/nanti).
+   - Kalau urgency tinggi: sebutkan kapan deadline-nya dan kenapa itu bikin task ini harus didahulukan.
+   - Kalau importance tinggi tapi urgency rendah: jelaskan bahwa task ini penting untuk dikerjakan lebih awal walau belum mendesak, supaya tidak numpuk.
+   - Kalau effort tinggi: boleh sebutkan saran "kerjakan saat energi masih segar" atau semacamnya.
+   - Kalau task ini diberi prioritas RENDAH (3): jelaskan dengan halus alasan kenapa bisa menyusul/fleksibel (misal "belum ada deadline ketat, jadi bisa nyusul kalau ada waktu kosong"), jangan terkesan meremehkan.
+   - Hindari mengulang kata "skor" atau "perhitungan" — fokus ke ALASAN PRAKTIS, seolah teman yang membantu menyusun rencana harian.
+
+   Contoh gaya yang BENAR:
+   - "Diprioritaskan duluan karena deadline-nya besok dan dampaknya cukup besar buat nilai kamu."
+   - "Ini agak berat, jadi enaknya dikerjain pagi waktu fokus masih penuh."
+   - "Belum ada deadline ketat, jadi santai aja — bisa diselipkan kalau ada waktu kosong."
+   - "Penting buat dikerjain lebih awal meskipun belum mendesak, biar nggak numpuk di akhir minggu."
+
+   Contoh gaya yang SALAH (jangan ditiru):
+   - "Skor MCDA 4.2 sehingga masuk priority 1 berdasarkan Eisenhower Matrix."
+   - "Urgency=5, importance=4, effort=3 menghasilkan total weighted score tinggi."
 """
 
 
@@ -170,22 +189,30 @@ def _format_time_display(value: str | None) -> str:
 
 def _ensure_schedule_fields(item: dict) -> dict:
     """
-    Pastikan setiap ScheduleItem punya is_locked_time & locked_start_time.
-    Ini mencegah Pydantic ValidationError di StateResponse.
+    Pastikan setiap ScheduleItem punya field yang lengkap,
+    termasuk Metrik Explainable AI agar terbaca oleh Frontend.
     """
     return {
         **item,
         "is_locked_time": bool(item.get("is_locked_time", False)),
         "locked_start_time": item.get("locked_start_time"),
+        "urgency": int(item.get("urgency", 3)),
+        "importance": int(item.get("importance", 3)),
+        "effort": int(item.get("effort", 3)),
+        "energy_fit": int(item.get("energy_fit", 3)),
+        "priority_reasoning": item.get("priority_reasoning", ""),
     }
 
 
 def _ensure_task_fields(item: dict) -> dict:
-    """Pastikan setiap TaskBreakdown punya field locked."""
     return {
         **item,
         "is_locked_time": bool(item.get("is_locked_time", False)),
         "locked_start_time": item.get("locked_start_time"),
+        "urgency": int(item.get("urgency", 3)),
+        "importance": int(item.get("importance", 3)),
+        "effort": int(item.get("effort", 3)),
+        "energy_fit": int(item.get("energy_fit", 3)),
     }
 
 
@@ -194,15 +221,29 @@ def _ensure_task_fields(item: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def calculate_priority(
-    urgency: int, importance: int, effort: int, energy_fit: int
-) -> int:
-    score = 0.45 * urgency + 0.30 * importance + 0.15 * (6 - effort) + 0.10 * energy_fit
+# Weighted Sum Model (MCDA) berbasis Eisenhower Matrix:
+# - Urgency & Importance = sumbu utama Eisenhower (bobot dominan, 0.45+0.30=0.75)
+# - Effort (dibalik: 6-effort) & Energy_fit = modifier kapasitas eksekusi (sisa 0.25)
+# Bobot diturunkan dari AHP pairwise comparison: urgency dianggap
+# 1.5x lebih penting dari importance, dan importance 2x lebih penting dari effort/energy.
+W_URGENCY = 0.45
+W_IMPORTANCE = 0.30
+W_EFFORT_INV = 0.15
+W_ENERGY = 0.10
+
+
+def calculate_priority(urgency, importance, effort, energy_fit) -> int:
+    score = (
+        W_URGENCY * urgency
+        + W_IMPORTANCE * importance
+        + W_EFFORT_INV * (6 - effort)
+        + W_ENERGY * energy_fit
+    )
     if score >= 4.0:
-        return 1
+        return 1  # Quadrant 1: Do First
     if score >= 2.7:
-        return 2
-    return 3
+        return 2  # Quadrant 2: Schedule
+    return 3  # Quadrant 3/4: Delegate/Eliminate
 
 
 # ---------------------------------------------------------------------------
@@ -410,9 +451,16 @@ def build_proposed_schedule(
                     "is_locked_time": is_locked
                     or bool(item.get("is_locked_time", False)),
                     "locked_start_time": item.get("locked_start_time"),
+                    # --- SUNTIKKAN METRIK AI KE SINI ---
+                    "urgency": int(item.get("urgency", 3)),
+                    "importance": int(item.get("importance", 3)),
+                    "effort": int(item.get("effort", 3)),
+                    "energy_fit": int(item.get("energy_fit", 3)),
+                    "priority_reasoning": new_reasoning,
                 }
             )
         )
+        print("PROPOSED SCHEDULE", proposed_schedule, flush=True)
 
     return proposed_schedule
 
@@ -479,6 +527,12 @@ def apply_hitl_edits(
                 ),
                 "locked_start_time": edited.get("locked_start_time")
                 or old.get("locked_start_time"),
+                
+                # --- TANGKAP PERUBAHAN SLIDER DARI UI ---
+                "urgency": int(edited["urgency"]) if "urgency" in edited else int(old.get("urgency", 3)),
+                "importance": int(edited["importance"]) if "importance" in edited else int(old.get("importance", 3)),
+                "effort": int(edited["effort"]) if "effort" in edited else int(old.get("effort", 3)),
+                "energy_fit": int(edited["energy_fit"]) if "energy_fit" in edited else int(old.get("energy_fit", 3)),
             }
         )
         final_tasks.append(merged)
@@ -487,7 +541,7 @@ def apply_hitl_edits(
     if edited_schedule_raw:
         # Jika UI mengirim proposed_schedule, ambil URUTAN task-nya saja
         ordered_task_ids = [str(s.get("task_id", "")) for s in edited_schedule_raw]
-        
+
         def get_order(t):
             tid = str(t.get("task_id", ""))
             return ordered_task_ids.index(tid) if tid in ordered_task_ids else 9999
@@ -509,6 +563,7 @@ def apply_hitl_edits(
     final_schedule = build_proposed_schedule(final_tasks, existing_schedules)
 
     return final_tasks, final_schedule
+
 
 def _apply_locked_times_to_schedule(
     schedule: list[dict],
@@ -682,6 +737,10 @@ def build_task_breakdown_with_llm(
                     "priority_reasoning": parsed.priority_reasoning,
                     "is_locked_time": parsed.is_locked_time,
                     "locked_start_time": parsed.locked_start_time,
+                    "urgency": parsed.urgency,
+                    "importance": parsed.importance,
+                    "effort": parsed.effort,
+                    "energy_fit": parsed.energy_fit,    
                 }
             )
         )
