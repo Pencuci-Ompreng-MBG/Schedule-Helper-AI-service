@@ -78,10 +78,10 @@ export type PrioritizerTask = {
   category: string;
   preferred_window: string;
   is_locked_time?: boolean;
-  urgency: 3,
-  importance: 3,
-  effort: 3,
-  energy_fit: 3,
+  urgency: number,
+  importance: number,
+  effort: number,
+  energy_fit: number,
   priority_reasoning?: string;
   locked_start_time?: string;
 };
