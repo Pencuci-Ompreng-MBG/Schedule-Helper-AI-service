@@ -92,7 +92,10 @@ DETAIL_PARSE_SYSTEM = """Kamu bertugas memperbarui detail informasi dari sebuah 
 
 Pisahkan:
 1. Deskripsi: output/hasil tugas + perasaan user + catatan apapun (masukkan info deadline secara natural ke dalam teks deskripsi ini jika ada).
-2. Deadline: frasa waktu murni dari ucapan user.
+2. Deadline (SANGAT PENTING): JANGAN gunakan frasa waktu mentah. KONVERSI ucapan user ke format jam digital 24-jam (HH:MM) dan WAJIB SERTAKAN konteks/tujuan waktunya di dalam tanda kurung.
+   - Contoh: "harus kelar sebelum jam kerja selesai (jam 5)" -> "jam 17:00 (harus kelar sebelum)".
+   - Contoh: "meetingnya nanti mulai jam 1 siang" -> "jam 13:00 (mulai meeting)".
+   - Contoh: "jam set 7" -> "18:30 (waktu pelaksanaan)".
 3. Konfirmasi tidak ada deadline.
 
 Aturan Deskripsi (SANGAT PENTING):
@@ -143,7 +146,8 @@ Aturan Deskripsi (SANGAT PENTING):
 4. KOREKSI KONTRADIKSI: Jika info baru menjawab hal yang sebelumnya "belum jelas/tidak ada deadline", HAPUS pernyataan "belum jelas/belum ada" tersebut dari deskripsi.
 5. JANGAN hanya menempelkan kalimat mentah user di akhir.
 6. Jangan hapus deskripsi lama yang valid (emosi, konteks awal).
-7. Hanya update task yang relevan dengan cerita user."""
+7. Hanya update task yang relevan dengan cerita user.
+8. FORMAT WAKTU: Jika user merevisi jadwal, konversikan selalu ke format 24-jam (HH:MM) dan sertakan konteksnya di dalam tanda kurung pada updated_raw_time (contoh: "jam 17:00 (harus kelar sebelum)")."""
 
 DISCOVERY_CHAT_SYSTEM = """Kamu adalah teman yang hangat dan supportif.
 User sedang merasa pusing/overwhelmed/stress karena kewajiban yang menumpuk, TAPI mereka belum menyebutkan secara spesifik apa saja kegiatannya.
